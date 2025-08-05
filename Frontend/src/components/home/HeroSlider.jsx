@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay, EffectFade } from 'swiper/modules';
-import { Box, Typography, Button, Container, Stack, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, Container, Stack } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { ShoppingCart } from '@mui/icons-material';
-import { useCart } from '../../context/CartProvider';
-import { useNotification } from '../../context/NotificationProvider.jsx';
+import { ShoppingBag } from '@mui/icons-material';
 import axios from '../../api/axios';
 import gsmImage from '../../assets/images/GSM.png';
 import spdsImage from '../../assets/images/spds.png';
@@ -25,12 +24,12 @@ const SlideContent = styled(Box)(({ theme }) => ({
   paddingTop: theme.spacing(2),
   paddingBottom: theme.spacing(4),
   width: '100%',
+  borderRadius: 'inherit', // Inherit border radius from parent
   [theme.breakpoints.down('sm')]: {
     height: '75vh',
     paddingTop: theme.spacing(1),
     paddingBottom: theme.spacing(3),
-    width: '95%',
-    margin: '0 auto'
+    width: '100%'
   }
 }));
 
@@ -116,7 +115,6 @@ const slides = [
     title: 'GSM Based System',
     subtitle: 'Smart Home Automation',
     description: 'Control your home appliances remotely with our advanced GSM technology. Perfect for modern smart homes.',
-    price: '₹12,999',
     features: ['Remote Control via SMS', 'Real-time Status Updates', 'Easy Installation'],
     buttonText: 'Shop Now',
     image: gsmImage,
@@ -126,7 +124,6 @@ const slides = [
     title: 'Single Phase Digital Starter',
     subtitle: 'SPDS Technology',
     description: 'Efficient power distribution system with smart monitoring and control capabilities.',
-    price: '₹15,999',
     features: ['Power Monitoring', 'Load Balancing', 'Energy Analytics'],
     buttonText: 'Buy Now',
     image: spdsImage,
@@ -136,7 +133,6 @@ const slides = [
     title: 'Two Phase Digital Starter',
     subtitle: 'TPDS Solutions',
     description: 'Professional grade three-phase distribution system for industrial applications.',
-    price: '₹24,999',
     features: ['Phase Monitoring', 'Overload Protection', 'Industrial Grade'],
     buttonText: 'Buy Now',
     image: tpdsImage,
@@ -145,74 +141,26 @@ const slides = [
 ];
 
 const HeroSlider = () => {
-  const { addToCart } = useCart();
-  const { showNotification } = useNotification();
-  const [products, setProducts] = useState([]);
-  const [addingToCart, setAddingToCart] = useState(null);
+  const navigate = useNavigate();
 
-  // Fetch products on component mount
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await axios.get('/products');
-        setProducts(res.data);
-      } catch (error) {
-        console.error('Error fetching products:', error);
-      }
-    };
-    fetchProducts();
-  }, []);
-
-  const handleAddToCart = async (slide) => {
-    setAddingToCart(slide.searchTerm);
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Find matching product from database with multiple search strategies
-    let product = products.find(p => 
-      p.name.toLowerCase().includes(slide.searchTerm.toLowerCase())
-    );
-    
-    // Try alternative search patterns if not found
-    if (!product) {
-      const alternativeSearchTerms = {
-        'GSM': ['gsm', 'mobile', 'auto', 'remote'],
-        'SPDS': ['single', 'phase', 'digital', 'starter'],
-        'TPDS': ['two', 'phase', 'digital', 'starter', 'three']
-      };
-      
-      const searchTerms = alternativeSearchTerms[slide.searchTerm] || [];
-      product = products.find(p => 
-        searchTerms.some(term => 
-          p.name.toLowerCase().includes(term) ||
-          p.description?.toLowerCase().includes(term) ||
-          p.category?.toLowerCase().includes(term)
-        )
-      );
-    }
-    
-    if (product && product._id) {
-      // Only add if we found a real product with a valid ObjectId
-      addToCart(product, 1);
-      showNotification(`${product.name} added to cart! 🛒`, 'success');
-    } else {
-      // Show error message instead of adding fallback product
-      showNotification(`Product "${slide.title}" is currently unavailable. Please try again later.`, 'warning');
-    }
-    
-    setAddingToCart(null);
+  const handleBuyNow = (slide) => {
+    // Navigate to products page with search filter
+    navigate(`/products?search=${slide.searchTerm}`);
   };
   return (
     <Box sx={{ 
       width: '100%',
       display: 'flex',
       justifyContent: 'center',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      pt: { xs: 2, md: 4 } // Add top padding for classy look
     }}>
       <Box sx={{
-        width: { xs: '95%', sm: '100%' },
-        mx: 'auto'
+        width: { xs: '95%', sm: '90%', md: '85%', lg: '80%' }, // Progressive width constraints
+        mx: 'auto',
+        borderRadius: { xs: '12px', md: '16px' }, // Rounded corners
+        overflow: 'hidden',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.15)' // Subtle shadow
       }}>
         <Swiper
           modules={[Navigation, Pagination, Autoplay, EffectFade]}
@@ -262,25 +210,13 @@ const HeroSlider = () => {
                       sx={{
                         fontWeight: 700,
                         color: 'white',
-                        mb: { xs: 0.5, sm: 1 },
+                        mb: { xs: 1, sm: 1.5 },
                         fontSize: { xs: '1.6rem', sm: '2.2rem', md: '2.8rem' },
                         lineHeight: 1.2,
                         textAlign: { xs: 'center', md: 'left' },
                       }}
                     >
                       {slide.title}
-                    </Typography>
-                    <Typography
-                      variant="h4"
-                      sx={{
-                        fontWeight: 600,
-                        color: '#1976d2',
-                        mb: { xs: 0.5, sm: 1 },
-                        fontSize: { xs: '1.2rem', sm: '1.6rem', md: '2rem' },
-                        textAlign: { xs: 'center', md: 'left' },
-                      }}
-                    >
-                      {slide.price}
                     </Typography>
                     <Typography
                       variant="body1"
@@ -327,11 +263,10 @@ const HeroSlider = () => {
                     </Stack>
                     <HeroButton 
                       variant="contained"
-                      startIcon={addingToCart === slide.searchTerm ? <CircularProgress size={20} sx={{ color: 'white' }} /> : <ShoppingCart />}
-                      onClick={() => handleAddToCart(slide)}
-                      disabled={addingToCart === slide.searchTerm}
+                      startIcon={<ShoppingBag />}
+                      onClick={() => handleBuyNow(slide)}
                     >
-                      {addingToCart === slide.searchTerm ? 'Adding...' : slide.buttonText}
+                      {slide.buttonText}
                     </HeroButton>
                   </ContentWrapper>
                   <ProductImage 
