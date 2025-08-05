@@ -168,6 +168,8 @@ const Cart = () => {
     // Brief delay for UX
     await new Promise(resolve => setTimeout(resolve, 300));
     
+    // Scroll to top before navigation
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     // Navigate to checkout page
     navigate('/checkout');
     setLoading(false);
@@ -217,7 +219,10 @@ const Cart = () => {
               
               <ModernButton
                 size="large"
-                onClick={() => navigate('/products')}
+                onClick={() => {
+                  window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+                  navigate('/products');
+                }}
                 startIcon={<ArrowBack />}
               >
                 Continue Shopping
@@ -237,7 +242,10 @@ const Cart = () => {
           <Box sx={{ mb: 4 }}>
             <Button
               startIcon={<ArrowBack />}
-              onClick={() => navigate('/products')}
+              onClick={() => {
+                window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+                navigate('/products');
+              }}
               sx={{
                 mb: 3,
                 color: '#64748b',

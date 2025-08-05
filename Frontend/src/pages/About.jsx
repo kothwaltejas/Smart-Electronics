@@ -273,6 +273,8 @@ const AboutPage = () => {
 
   const handleNavigation = (path) => {
     if (path === '/contact') {
+      // Scroll to top first
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
       // Navigate to home page contact section
       navigate('/', { replace: true });
       // Use setTimeout to ensure navigation completes before scrolling
@@ -283,6 +285,8 @@ const AboutPage = () => {
         }
       }, 100);
     } else {
+      // Scroll to top before navigation
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
       // Use React Router navigation to avoid page reload and loading screen
       navigate(path);
     }
@@ -312,7 +316,7 @@ const AboutPage = () => {
                 color: '#333',
               }}
             >
-              About Smart Electronics
+              About Smart Enterprises
             </Typography>
             
             <Typography
@@ -375,7 +379,7 @@ const AboutPage = () => {
                   mb: 3
                 }}>
                   Founded in 2019 with a simple yet powerful vision: to bridge the gap between 
-                  traditional farming practices and modern technology. Smart Electronics emerged 
+                  traditional farming practices and modern technology. Smart Enterprises emerged 
                   from the rural heartlands of Maharashtra, where we witnessed firsthand the 
                   daily challenges faced by farmers.
                 </Typography>

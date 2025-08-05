@@ -8,11 +8,11 @@ const emailService = require('../services/emailService');
 const generateToken = (id, role) => {
   return jwt.sign(
     { id, role }, 
-    process.env.JWT_SECRET || 'smartelectronics_secret_key_2025', 
+    process.env.JWT_SECRET || 'smartenterprises_secret_key_2025', 
     {
       expiresIn: process.env.JWT_EXPIRE || '7d',
-      issuer: 'SmartElectronics',
-      audience: 'SmartElectronics-Users'
+      issuer: 'Smart Enterprises',
+      audience: 'Smart-Enterprises-Users'
     }
   );
 };
@@ -594,7 +594,7 @@ exports.verifyEmailOTP = async (req, res) => {
     await emailService.sendWelcomeEmail(user.email, user.name);
 
     // Send token response (auto-login after verification)
-    sendTokenResponse(user, 200, res, 'Email verified successfully! Welcome to SmartElectronics!');
+    sendTokenResponse(user, 200, res, 'Email verified successfully! Welcome to Smart Enterprises!');
 
   } catch (error) {
     console.error('Email verification error:', error);
@@ -666,7 +666,7 @@ exports.completeRegistration = async (req, res) => {
     await emailService.sendWelcomeEmail(user.email, user.name);
 
     // Send token response (auto-login after completion)
-    sendTokenResponse(user, 200, res, 'Registration completed successfully! Welcome to SmartElectronics!');
+    sendTokenResponse(user, 200, res, 'Registration completed successfully! Welcome to Smart Enterprises!');
 
   } catch (error) {
     console.error('Complete registration error:', error);

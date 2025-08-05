@@ -25,7 +25,7 @@ exports.protect = async (req, res, next) => {
 
     try {
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'smartelectronics_secret_key_2025');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'smartenterprises_secret_key_2025');
       
       // Check if user still exists
       const user = await User.findById(decoded.id);
@@ -143,7 +143,7 @@ exports.optionalAuth = async (req, res, next) => {
 
     try {
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'smartelectronics_secret_key_2025');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'smartenterprises_secret_key_2025');
       
       // Check if user still exists
       const user = await User.findById(decoded.id);

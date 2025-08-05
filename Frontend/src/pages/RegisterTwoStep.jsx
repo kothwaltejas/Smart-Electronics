@@ -186,7 +186,7 @@ const RegisterTwoStep = () => {
                 mb: 1
               }}
             >
-              SmartElectronics
+              Smart Enterprises
             </Typography>
             <Box 
               sx={{ 
@@ -653,7 +653,7 @@ const RegisterTwoStep = () => {
                   mb: 2
                 }}
               >
-                Welcome to SmartElectronics!
+                Welcome to Smart Enterprises!
               </Typography>
               <Typography variant="body1" color="text.secondary" mb={3}>
                 Your account has been created successfully. Redirecting to homepage...

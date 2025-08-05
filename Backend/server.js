@@ -1,18 +1,20 @@
-// SmartElectronics Backend Server
+// Smart Enterprises Backend Server
+const dotenv = require('dotenv');
+
+// Load environment variables FIRST before any other imports
+dotenv.config();
+
 const express = require('express');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
 
-// Import routes
+// Import routes (AFTER dotenv is loaded)
 const productRoutes = require('./routes/productRoutes');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes-simple');
 const uploadRoutes = require('./routes/uploadRoutes-simple');
 const orderRoutes = require('./routes/orderRoutes');
-
-dotenv.config();
 
 const app = express();
 
