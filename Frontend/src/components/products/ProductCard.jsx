@@ -13,13 +13,16 @@ import { ShoppingCart, Info, CheckCircle } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartProvider';
 import { useNotification } from '../../context/NotificationProvider.jsx';
+import ComingSoonModal from '../common/ComingSoonModal';
 
 const ProductCard = ({ product }) => {
-  const { addToCart } = useCart();
+  const { addToCart } = useCart(); // Keep existing code intact
   const { showNotification } = useNotification();
   const [adding, setAdding] = useState(false);
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
-  const handleAddToCart = async () => {
+  // Keep original function for future use - currently disabled
+  const handleAddToCartOriginal = async () => {
     setAdding(true);
     
     // Simulate API delay for better UX
@@ -28,6 +31,11 @@ const ProductCard = ({ product }) => {
     addToCart(product, 1);
     showNotification(`${product.name} added to cart! 🛒`, 'success');
     setAdding(false);
+  };
+
+  // New handler that shows coming soon modal
+  const handleAddToCart = () => {
+    setShowComingSoon(true);
   };
 
   return (
@@ -112,9 +120,9 @@ const ProductCard = ({ product }) => {
             <Button
               fullWidth
               variant="contained"
-              disabled={adding}
+              disabled={false} // Disabled adding state since we're showing modal instead
               onClick={handleAddToCart}
-              startIcon={adding ? <CircularProgress size={16} color="inherit" /> : <ShoppingCart />}
+              startIcon={<ShoppingCart />} // Remove loading state since no actual processing
               sx={{
                 backgroundColor: '#1976d2',
                 color: '#fff',
@@ -122,18 +130,13 @@ const ProductCard = ({ product }) => {
                 py: { xs: 1, sm: 1.5 },
                 '&:hover': {
                   backgroundColor: '#1565c0',
-                  transform: adding ? 'none' : 'translateY(-1px)',
-                },
-                '&:disabled': {
-                  backgroundColor: '#1976d2',
-                  color: '#fff',
-                  opacity: 0.7
+                  transform: 'translateY(-1px)',
                 },
                 fontWeight: 600,
                 transition: 'all 0.2s ease'
               }}
             >
-              {adding ? 'Adding...' : 'Add to Cart'}
+              Add to Cart
             </Button>
 
             <Link
@@ -164,6 +167,11 @@ const ProductCard = ({ product }) => {
           </Stack>
         </CardContent>
       </Card>
+      
+      <ComingSoonModal 
+        open={showComingSoon} 
+        onClose={() => setShowComingSoon(false)} 
+      />
     </>
   );
 };

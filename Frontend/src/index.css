@@ -5,7 +5,8 @@
   font-family: 'Inter', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color-scheme: light dark;
+  color-scheme: light;
+  color: #213547;
   background-color: #ffffff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -22,6 +23,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   font-family: 'Inter', sans-serif;
+  color: #213547;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
@@ -60,6 +62,138 @@ body {
   background-color: #ffffff !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+/* Comprehensive Notification Styling - Complete Override */
+.MuiSnackbar-root {
+  z-index: 9999 !important;
+}
+
+.MuiSnackbar-root .MuiAlert-root {
+  min-width: 300px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 14px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Success Notifications */
+.MuiAlert-standardSuccess {
+  background-color: #f1f8e9 !important;
+  color: #2e7d32 !important;
+  border: 1px solid #4caf50 !important;
+}
+
+.MuiAlert-standardSuccess .MuiAlert-icon {
+  color: #4caf50 !important;
+}
+
+.MuiAlert-standardSuccess .MuiAlert-message {
+  color: #2e7d32 !important;
+  font-weight: 500 !important;
+}
+
+.MuiAlert-standardSuccess .MuiAlert-action .MuiIconButton-root {
+  color: #2e7d32 !important;
+}
+
+/* Error Notifications */
+.MuiAlert-standardError {
+  background-color: #ffebee !important;
+  color: #c62828 !important;
+  border: 1px solid #f44336 !important;
+}
+
+.MuiAlert-standardError .MuiAlert-icon {
+  color: #f44336 !important;
+}
+
+.MuiAlert-standardError .MuiAlert-message {
+  color: #c62828 !important;
+  font-weight: 500 !important;
+}
+
+.MuiAlert-standardError .MuiAlert-action .MuiIconButton-root {
+  color: #c62828 !important;
+}
+
+/* Warning Notifications */
+.MuiAlert-standardWarning {
+  background-color: #fff8e1 !important;
+  color: #ef6c00 !important;
+  border: 1px solid #ff9800 !important;
+}
+
+.MuiAlert-standardWarning .MuiAlert-icon {
+  color: #ff9800 !important;
+}
+
+.MuiAlert-standardWarning .MuiAlert-message {
+  color: #ef6c00 !important;
+  font-weight: 500 !important;
+}
+
+.MuiAlert-standardWarning .MuiAlert-action .MuiIconButton-root {
+  color: #ef6c00 !important;
+}
+
+/* Info Notifications */
+.MuiAlert-standardInfo {
+  background-color: #e3f2fd !important;
+  color: #1565c0 !important;
+  border: 1px solid #2196f3 !important;
+}
+
+.MuiAlert-standardInfo .MuiAlert-icon {
+  color: #2196f3 !important;
+}
+
+.MuiAlert-standardInfo .MuiAlert-message {
+  color: #1565c0 !important;
+  font-weight: 500 !important;
+}
+
+.MuiAlert-standardInfo .MuiAlert-action .MuiIconButton-root {
+  color: #1565c0 !important;
+}
+
+/* Hover Effects for Close Button */
+.MuiAlert-root .MuiAlert-action .MuiIconButton-root:hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+  transform: scale(1.1) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Remove any conflicting filled alert styles */
+.MuiAlert-filled {
+  display: none !important;
+}
+
+/* Ensure all text elements are properly styled */
+.MuiSnackbar-root * {
+  font-family: 'Inter', sans-serif !important;
+}
+
+.MuiAlert-root .MuiAlert-message {
+  display: flex !important;
+  align-items: center !important;
+  line-height: 1.4 !important;
+}
+
+/* Animation for notifications */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.MuiSnackbar-root .MuiAlert-root {
+  animation: slideInRight 0.3s ease-out !important;
 }
 
 /* Hero Slider Navigation Styles */

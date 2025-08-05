@@ -45,8 +45,7 @@ export const NotificationProvider = ({ children }) => {
         <Alert
           onClose={hideNotification}
           severity={notification.severity}
-          variant="filled"
-          sx={{ width: '100%' }}
+          variant="standard"
         >
           {notification.message}
         </Alert>

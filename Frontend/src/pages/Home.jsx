@@ -141,10 +141,18 @@ const SocialIconButton = styled(IconButton)(({ theme }) => ({
     filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))',
   },
   '&.instagram': {
-    color: '#E4405F',
+    background: 'linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
     '&:hover': {
-      color: '#C13584',
-      backgroundColor: 'rgba(228, 64, 95, 0.1)',
+      background: 'linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text',
+      backgroundColor: 'rgba(240, 148, 51, 0.1)',
+      transform: 'scale(1.2)',
+      filter: 'drop-shadow(2px 2px 4px rgba(188, 24, 136, 0.4))',
     },
   },
   '&.youtube': {
@@ -190,12 +198,12 @@ const homeFeatures = [
 
 const statistics = [
   {
-    number: '500+',
+    number: '5K+',
     label: 'Happy Customers',
     icon: <People sx={{ fontSize: '2.5rem', mb: 1 }} />,
   },
   {
-    number: '50+',
+    number: '25+',
     label: 'Products Available',
     icon: <Build sx={{ fontSize: '2.5rem', mb: 1 }} />,
   },
@@ -205,7 +213,7 @@ const statistics = [
     icon: <Support sx={{ fontSize: '2.5rem', mb: 1 }} />,
   },
   {
-    number: '10+',
+    number: '5+',
     label: 'Years Experience',
     icon: <TrendingUp sx={{ fontSize: '2.5rem', mb: 1 }} />,
   },
@@ -833,7 +841,7 @@ const HomePage = () => {
             <SocialIconButton 
               className="instagram"
               onClick={() => window.open('https://instagram.com/smaet_enterprises2011?utm_source=qr&igshid=MzNlNGNkZWQ4Mg%3D%3D', '_blank')}
-              sx={{ fontSize: '2rem' }}
+              sx={{ fontSize: '2.5rem' }}
             >
               <i className="fab fa-instagram" />
             </SocialIconButton>
@@ -841,7 +849,7 @@ const HomePage = () => {
             <SocialIconButton 
               className="youtube"
               onClick={() => window.open('https://youtube.com/@smartenterprisesservices', '_blank')}
-              sx={{ fontSize: '2rem' }}
+              sx={{ fontSize: '2.5rem' }}
             >
               <i className="fab fa-youtube" />
             </SocialIconButton>
@@ -849,7 +857,7 @@ const HomePage = () => {
             <SocialIconButton 
               className="facebook"
               onClick={() => window.open('https://www.facebook.com/profile.php?id=100083190129063&mibextid=9R9pXO', '_blank')}
-              sx={{ fontSize: '2rem' }}
+              sx={{ fontSize: '2.5rem' }}
             >
               <i className="fab fa-facebook" />
             </SocialIconButton>
@@ -857,7 +865,7 @@ const HomePage = () => {
             <SocialIconButton 
               className="email"
               onClick={() => window.open('mailto:smartenterprisesservices@gmail.com', '_blank')}
-              sx={{ fontSize: '2rem' }}
+              sx={{ fontSize: '2.5rem' }}
             >
               <i className="fas fa-envelope" />
             </SocialIconButton>
