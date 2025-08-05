@@ -68,7 +68,7 @@ const LoadingScreen = ({ isLoading = true }) => {
     <LoadingContainer>
       <LogoContainer>
         <LoadingRing size={140} thickness={2} />
-        <Logo src={smartLogo} alt="Smart Electronics" />
+        <Logo src={smartLogo} alt="Smart Enterprises" />
       </LogoContainer>
     </LoadingContainer>
   );

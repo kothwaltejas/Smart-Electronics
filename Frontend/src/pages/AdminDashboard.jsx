@@ -775,7 +775,7 @@ const AdminDashboard = () => {
                     Welcome back, {user?.name || 'Admin'}!
                   </Typography>
                   <Typography variant="h6" sx={{ opacity: 0.9 }}>
-                    SmartElectronics Admin Dashboard
+                    Smart Enterprises Admin Dashboard
                   </Typography>
                   <Typography variant="body2" sx={{ opacity: 0.7, mt: 1 }}>
                     Last refreshed: {lastRefresh.toLocaleTimeString()}

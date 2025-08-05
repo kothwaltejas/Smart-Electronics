@@ -138,6 +138,8 @@ const Navbar = () => {
   };
 
   const handleNavigation = (path) => {
+    // Scroll to top before navigation
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     navigate(path);
     if (isMobile) {
       handleDrawerToggle();
@@ -155,21 +157,25 @@ const Navbar = () => {
   const handleLogout = async () => {
     await logout();
     handleUserMenuClose();
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     navigate('/');
   };
 
   const handleProfile = () => {
     handleUserMenuClose();
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     navigate('/profile');
   };
 
   const handleYourOrders = () => {
     handleUserMenuClose();
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     navigate('/orders');
   };
 
   const handleAdminPanel = () => {
     handleUserMenuClose();
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     navigate('/admin');
   };
 

@@ -224,13 +224,21 @@ const AuthForm = () => {
 
   return (
     <Box sx={{ 
-      minHeight: '100vh', 
+      height: '100vh', 
       display: 'flex',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       justifyContent: 'center',
       backgroundColor: '#f5f5f5',
       fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-      p: 2
+      pt: 2,
+      pb: 2,
+      px: 2,
+      overflow: 'hidden',
+      position: 'fixed',
+      top:68,
+      left: 0,
+      right: 0,
+      bottom: 0
     }}>
       {/* Main Container with Sliding Animation */}
       <Box sx={{ 
@@ -1023,7 +1031,7 @@ const AuthForm = () => {
                         mb: 2
                       }}
                     >
-                      Welcome to SmartElectronics!
+                      Welcome to Smart Enterprises!
                     </Typography>
                     <Typography variant="body1" color="text.secondary" mb={3}>
                       Your account has been created successfully. Redirecting to homepage...
