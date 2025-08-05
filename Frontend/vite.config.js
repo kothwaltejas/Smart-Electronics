@@ -15,5 +15,20 @@ export default defineConfig({
       '@api': path.resolve(__dirname, './src/api'),
       '@styles': path.resolve(__dirname, './src/styles')
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          mui: ['@mui/material', '@mui/icons-material'],
+          router: ['react-router-dom']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', '@mui/material', '@mui/icons-material']
   }
 })
