@@ -6,6 +6,7 @@ import responsiveTheme from './theme/responsiveTheme';
 
 import Navbar from './components/common/Navbar';
 import LoadingScreen from './components/common/LoadingScreen';
+import ScrollToTop from './components/common/ScrollToTop';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import Home from './pages/Home';
 import About from './pages/About';
@@ -62,6 +63,7 @@ function App() {
           <AuthProvider>
             <CartProvider>
               <Router>
+                <ScrollToTop />
                 <Navbar />
                 <Routes>
                 <Route path="/" element={<Home />} />

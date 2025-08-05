@@ -144,6 +144,8 @@ const HeroSlider = () => {
   const navigate = useNavigate();
 
   const handleBuyNow = (slide) => {
+    // Scroll to top before navigation
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     // Navigate to products page with search filter
     navigate(`/products?search=${slide.searchTerm}`);
   };

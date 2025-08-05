@@ -68,7 +68,7 @@ export const CartProvider = ({ children }) => {
 
   // Load cart from localStorage on mount
   useEffect(() => {
-    const savedCart = localStorage.getItem('smartElectronicsCart');
+    const savedCart = localStorage.getItem('smartEnterprisesCart');
     if (savedCart) {
       try {
         const cartData = JSON.parse(savedCart);
@@ -81,7 +81,7 @@ export const CartProvider = ({ children }) => {
 
   // Save cart to localStorage whenever cartItems change
   useEffect(() => {
-    localStorage.setItem('smartElectronicsCart', JSON.stringify(state.cartItems));
+    localStorage.setItem('smartEnterprisesCart', JSON.stringify(state.cartItems));
   }, [state.cartItems]);
 
   const addToCart = (product, quantity = 1) => {
