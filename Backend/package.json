@@ -1,7 +1,7 @@
 {
-  "name": "smartelectronics-backend",
+  "name": "smartenterprises-backend",
   "version": "1.0.0",
-  "description": "SmartElectronics API with authentication and admin panel",
+  "description": "Smart Enterprises API with authentication and admin panel",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -16,7 +16,7 @@
     "express",
     "mongodb"
   ],
-  "author": "SmartElectronics Team",
+  "author": "Smart Enterprises Team",
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^2.4.3",

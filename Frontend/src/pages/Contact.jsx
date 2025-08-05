@@ -115,8 +115,8 @@ const ContactPage = () => {
     {
       icon: <Email sx={{ fontSize: '3rem', color: '#2196F3' }} />,
       title: 'Email',
-      info: 'info@smartelectronics.com',
-      action: () => window.open('mailto:info@smartelectronics.com'),
+      info: 'info@smartenterprises.com',
+      action: () => window.open('mailto:info@smartenterprises.com'),
     },
     {
       icon: <LocationOn sx={{ fontSize: '3rem', color: '#2196F3' }} />,
@@ -165,7 +165,7 @@ const ContactPage = () => {
                 mb: 4
               }}
             >
-              Get in touch with Smart Electronics for all your agricultural electronic needs
+              Get in touch with Smart Enterprises for all your agricultural electronic needs
             </Typography>
           </motion.div>
         </Container>
@@ -342,7 +342,7 @@ const ContactPage = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                       <Business sx={{ color: '#2196F3', mr: 2 }} />
                       <Typography variant="h6" fontWeight={600}>
-                        Smart Electronics
+                        Smart Enterprises
                       </Typography>
                     </Box>
                     <Typography variant="body2" sx={{ color: '#666', mb: 2 }}>

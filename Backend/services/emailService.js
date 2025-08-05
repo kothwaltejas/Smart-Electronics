@@ -2,12 +2,28 @@ const nodemailer = require('nodemailer');
 
 class EmailService {
   constructor() {
+    this.transporter = null;
+    this.initialized = false;
+    // Don't initialize immediately - wait for first use
+    console.log('📧 EmailService created - will initialize on first use');
+  }
+
+  // Initialize the email service (called on first use)
+  initialize() {
+    if (this.initialized) {
+      return this.transporter !== null;
+    }
+
     try {
-      // Check if email credentials are provided
-      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || process.env.EMAIL_PASS === 'your-16-character-app-password-here') {
-        console.log('⚠️  Email credentials not configured - using console mode for development');
+      // Check if email credentials are provided and valid
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || 
+          process.env.EMAIL_PASS.length < 10) {
+        console.log('⚠️  Email credentials not configured properly - using console mode for development');
+        console.log('📧 Current EMAIL_USER:', process.env.EMAIL_USER || 'not set');
+        console.log('📧 Current EMAIL_PASS length:', process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 'not set');
         this.transporter = null;
-        return;
+        this.initialized = true;
+        return false;
       }
 
       // Create transporter for sending emails
@@ -25,20 +41,29 @@ class EmailService {
         }
       });
 
+      console.log('✅ Email service initialized successfully');
+      console.log(`📧 Configured for: ${process.env.EMAIL_USER}`);
+
       // Verify transporter configuration (don't block startup)
       this.transporter.verify((error, success) => {
         if (error) {
           console.error('❌ Email service configuration error:', error.message);
+          console.error('🔍 Full error details:', error);
           console.log('📧 Falling back to console mode for OTP display');
+          // Don't set transporter to null here, let individual methods handle fallback
         } else {
           console.log('✅ Email service is ready to send messages');
-          console.log(`📧 Configured for: ${process.env.EMAIL_USER}`);
+          console.log('🎯 Gmail SMTP connection verified successfully');
         }
       });
+
+      this.initialized = true;
+      return true;
     } catch (error) {
-      console.error('❌ EmailService constructor error:', error);
-      // Set a dummy transporter to prevent crashes
+      console.error('❌ EmailService initialization error:', error);
       this.transporter = null;
+      this.initialized = true;
+      return false;
     }
   }
 
@@ -50,16 +75,25 @@ class EmailService {
   // Send OTP email
   async sendOTPEmail(email, otp, name = 'User') {
     try {
+      // Initialize email service if not already done
+      this.initialize();
+      
+      console.log('🔍 Attempting to send OTP email...');
+      console.log('📧 Target email:', email);
+      console.log('🔧 Transporter available:', !!this.transporter);
+      console.log('🔧 EMAIL_USER set:', !!process.env.EMAIL_USER);
+      console.log('🔧 EMAIL_PASS set:', !!process.env.EMAIL_PASS);
+      
       // Try to send real email first
-      if (this.transporter && process.env.EMAIL_USER && process.env.EMAIL_PASS !== 'your-16-character-app-password-here') {
+      if (this.transporter && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
         const mailOptions = {
           from: process.env.EMAIL_USER,
           to: email,
-          subject: 'SmartElectronics - Email Verification OTP',
+          subject: 'Smart Enterprises - Email Verification OTP',
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
               <div style="background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-                <h1 style="color: white; margin: 0; font-size: 28px;">SmartElectronics</h1>
+                <h1 style="color: white; margin: 0; font-size: 28px;">Smart Enterprises</h1>
                 <p style="color: #e3f2fd; margin: 10px 0 0 0; font-size: 16px;">Your trusted electronics partner</p>
               </div>
               
@@ -68,7 +102,7 @@ class EmailService {
                 
                 <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
                   Hello ${name},<br><br>
-                  Thank you for registering with SmartElectronics! Please verify your email with this OTP:
+                  Thank you for registering with Smart Enterprises! Please verify your email with this OTP:
                 </p>
                 
                 <div style="background: #f5f5f5; border: 2px dashed #1976d2; border-radius: 8px; padding: 20px; text-align: center; margin: 30px 0;">
@@ -84,6 +118,7 @@ class EmailService {
 
         const result = await this.transporter.sendMail(mailOptions);
         console.log('✅ OTP email sent successfully to:', email);
+        console.log('📬 Message ID:', result.messageId);
         return { success: true, messageId: result.messageId };
       }
       
@@ -99,7 +134,10 @@ class EmailService {
       
       return { success: true, messageId: 'console-mode-' + Date.now() };
     } catch (error) {
-      console.error('❌ Error sending OTP email:', error);
+      console.error('❌ Error sending OTP email:', error.message);
+      console.error('🔍 Full error details:', error);
+      console.error('🔧 Error code:', error.code);
+      console.error('🔧 Error response:', error.response);
       
       // Always show OTP in console if email fails
       console.log('\n📧 =======================================');
@@ -115,6 +153,9 @@ class EmailService {
   // Send welcome email after successful registration
   async sendWelcomeEmail(email, name) {
     try {
+      // Initialize email service if not already done
+      this.initialize();
+      
       // For development: Log instead of sending email
       if (process.env.NODE_ENV === 'development') {
         console.log('🎉 [DEVELOPMENT] Welcome email for', name, 'at', email);
@@ -124,11 +165,11 @@ class EmailService {
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: email,
-        subject: 'Welcome to SmartElectronics! 🎉',
+        subject: 'Welcome to Smart Enterprises! 🎉',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
             <div style="background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Welcome to SmartElectronics!</h1>
+              <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Welcome to Smart Enterprises!</h1>
               <p style="color: #e8f5e8; margin: 10px 0 0 0; font-size: 16px;">Your journey into smart technology begins now</p>
             </div>
             
@@ -156,7 +197,7 @@ class EmailService {
               
               <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
                 <p style="color: #888; font-size: 12px; margin: 0;">
-                  Need help? Contact us at support@smartelectronics.com
+                  Need help? Contact us at support@smartenterprises.com
                 </p>
               </div>
             </div>
@@ -176,6 +217,9 @@ class EmailService {
   // Send password reset email
   async sendPasswordResetEmail(email, resetToken, name = 'User') {
     try {
+      // Initialize email service if not already done
+      this.initialize();
+      
       // For development: Log instead of sending email
       if (process.env.NODE_ENV === 'development') {
         const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
@@ -189,12 +233,12 @@ class EmailService {
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: email,
-        subject: 'SmartElectronics - Password Reset Request',
+        subject: 'Smart Enterprises - Password Reset Request',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
             <div style="background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
               <h1 style="color: white; margin: 0; font-size: 28px;">🔒 Password Reset</h1>
-              <p style="color: #fff3e0; margin: 10px 0 0 0; font-size: 16px;">SmartElectronics Account Security</p>
+              <p style="color: #fff3e0; margin: 10px 0 0 0; font-size: 16px;">Smart Enterprises Account Security</p>
             </div>
             
             <div style="background: white; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -202,7 +246,7 @@ class EmailService {
               
               <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
                 Hello ${name},<br><br>
-                We received a request to reset your password for your SmartElectronics account. If you made this request, click the button below to reset your password:
+                We received a request to reset your password for your Smart Enterprises account. If you made this request, click the button below to reset your password:
               </p>
               
               <div style="text-align: center; margin: 30px 0;">
@@ -224,7 +268,7 @@ class EmailService {
               
               <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
                 <p style="color: #888; font-size: 12px; margin: 0;">
-                  If you need assistance, contact us at support@smartelectronics.com
+                  If you need assistance, contact us at support@smartenterprises.com
                 </p>
               </div>
             </div>

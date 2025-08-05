@@ -100,7 +100,7 @@ const UserAvatar = styled(Box)(({ theme }) => ({
 const FooterSection = styled(Box)(({ theme }) => ({
   background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
   color: 'white',
-  padding: theme.spacing(4, 0),
+  padding: theme.spacing(2, 0),
   textAlign: 'center',
 }));
 
@@ -223,7 +223,7 @@ const testimonials = [
   {
     name: 'Ramesh  Patil',
     location: 'Farmer, Sangamner',
-    review: 'Smart Electronics has revolutionized my farming operations. Their automatic starters have saved me countless hours and improved my productivity significantly.',
+    review: 'Smart Enterprises has revolutionized my farming operations. Their automatic starters have saved me countless hours and improved my productivity significantly.',
     rating: 5,
     initials: 'RP',
   },
@@ -237,7 +237,7 @@ const testimonials = [
   {
     name: 'Prakash Jadhav',
     location: 'Business Owner, Akole',
-    review: 'I have been using Smart Electronics products for my business for years. Reliable, durable, and cost-effective solutions every time.',
+    review: 'I have been using Smart Enterprises products for my business for years. Reliable, durable, and cost-effective solutions every time.',
     rating: 5,
     initials: 'PJ',
   },
@@ -321,7 +321,7 @@ const HomePage = () => {
               fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' },
             }}
           >
-            Why Choose Smart Electronics
+            Why Choose Smart Enterprises
           </Typography>
           
           <Typography
@@ -884,7 +884,7 @@ const HomePage = () => {
               mb: 1
             }}
           >
-            © 2025 Smart Electronics. All rights reserved.
+            © 2025 Smart Enterprises. All rights reserved.
           </Typography>
           <Typography 
             variant="body2" 
@@ -901,7 +901,7 @@ const HomePage = () => {
                 color: '#FFD700'
               }}
             >
-              TechCrafters Solutions
+              Tecore Solutions
             </Typography>
           </Typography>
         </Container>
