@@ -247,7 +247,12 @@ const Navbar = () => {
       return (
         <IconButton 
           color="inherit" 
-          sx={{ color: '#333' }}
+          sx={{ 
+            color: '#333',
+            '&:hover': {
+              backgroundColor: 'rgba(33, 150, 243, 0.08)',
+            }
+          }}
           onClick={() => handleNavigation('/login')}
         >
           <Person />
@@ -432,15 +437,37 @@ const Navbar = () => {
             </Box>
 
             {isMobile ? (
-              <IconButton
-                color="inherit"
-                aria-label="open drawer"
-                edge="start"
-                onClick={handleDrawerToggle}
-                sx={{ color: '#333' }}
-              >
-                <Menu />
-              </IconButton>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <IconButton 
+                  color="inherit" 
+                  sx={{ 
+                    color: '#333',
+                    mr: 0.5,
+                    '&:hover': {
+                      backgroundColor: 'rgba(33, 150, 243, 0.08)',
+                    }
+                  }}
+                  onClick={() => handleNavigation('/cart')}
+                >
+                  <Badge badgeContent={getTotalItems()} color="error">
+                    <ShoppingCart />
+                  </Badge>
+                </IconButton>
+                <IconButton
+                  color="inherit"
+                  aria-label="open drawer"
+                  edge="start"
+                  onClick={handleDrawerToggle}
+                  sx={{ 
+                    color: '#333',
+                    '&:hover': {
+                      backgroundColor: 'rgba(33, 150, 243, 0.08)',
+                    }
+                  }}
+                >
+                  <Menu />
+                </IconButton>
+              </Box>
             ) : (
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 {menuItems.map((item) => (

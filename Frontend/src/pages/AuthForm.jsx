@@ -474,19 +474,20 @@ const AuthForm = () => {
             maxHeight: '420px',
             overflowY: 'auto',
             '&::-webkit-scrollbar': {
-              width: '4px',
+              width: '0px',
+              background: 'transparent',
             },
             '&::-webkit-scrollbar-track': {
-              background: '#f1f1f1',
-              borderRadius: '10px',
+              background: 'transparent',
             },
             '&::-webkit-scrollbar-thumb': {
-              background: '#2196F3',
-              borderRadius: '10px',
+              background: 'transparent',
             },
             '&::-webkit-scrollbar-thumb:hover': {
-              background: '#1976D2',
-            }
+              background: 'transparent',
+            },
+            scrollbarWidth: 'none', /* Firefox */
+            '-ms-overflow-style': 'none', /* Internet Explorer 10+ */
           }}>
             {/* LOGIN FORM */}
             {isLogin ? (

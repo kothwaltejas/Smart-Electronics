@@ -21,16 +21,18 @@ import {
 } from '@mui/material';
 import { ShoppingCart, LocalShipping, Security, Add, Remove, FileDownload } from '@mui/icons-material';
 import { useCart } from '../context/CartProvider';
+import ComingSoonModal from '../components/common/ComingSoonModal';
 
 
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { addToCart } = useCart(); // Keep existing code intact
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [tabIndex, setTabIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -67,7 +69,8 @@ const ProductDetails = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 5 }}>
+    <>
+      <Container maxWidth="lg" sx={{ py: 5 }}>
       <Button
         variant="outlined"
         onClick={() => navigate(-1)}
@@ -144,8 +147,10 @@ const ProductDetails = () => {
                   startIcon={<ShoppingCart />}
                   sx={{ backgroundColor: '#1976d2', '&:hover': { backgroundColor: '#1565c0' } }}
                   onClick={() => {
-                    addToCart(product, quantity);
-                    // Show success message (you can add a snackbar here)
+                    // Keep original code for future use - currently disabled
+                    // addToCart(product, quantity);
+                    // Show coming soon modal instead
+                    setShowComingSoon(true);
                   }}
                 >
                   Add to Cart
@@ -257,6 +262,12 @@ const ProductDetails = () => {
         )}
       </Box>
     </Container>
+    
+    <ComingSoonModal 
+      open={showComingSoon} 
+      onClose={() => setShowComingSoon(false)} 
+    />
+    </>
   );
 };
 
