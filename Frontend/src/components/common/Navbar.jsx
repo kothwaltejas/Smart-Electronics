@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   AppBar, 
   Toolbar, 
@@ -43,12 +43,14 @@ import { useCart } from '@context/CartProvider';
 import { useAuth } from '@context/AuthProvider';
 import smartLogo from '../../assets/images/Smart.png';
 
-const StyledAppBar = styled(AppBar)(({ theme }) => ({
-  background: '#ffffff',
-  backdropFilter: 'none',
-  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+const StyledAppBar = styled(AppBar)(({ theme, scrolled }) => ({
+  background: scrolled ? 'rgba(255, 255, 255, 0.95)' : '#ffffff',
+  backdropFilter: scrolled ? 'blur(10px)' : 'none',
+  boxShadow: scrolled ? '0 2px 20px rgba(0,0,0,0.1)' : '0 2px 4px rgba(0,0,0,0.1)',
   borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
   zIndex: theme.zIndex.appBar,
+  transition: 'all 0.3s ease-in-out',
+  transform: scrolled ? 'translateY(-10px)' : 'translateY(0px)',
 }));
 
 const NavButton = styled(Button)(({ theme }) => ({
@@ -87,17 +89,48 @@ const BrandName = styled(Typography)(({ theme }) => ({
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
+  const [scrolled, setScrolled] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const { getTotalItems } = useCart();
   const { user, logout, isAuthenticated } = useAuth();
 
+  // Handle scroll behavior
+  useEffect(() => {
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 100;
+      setScrolled(isScrolled);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Handle smooth scrolling to sections
+  const handleNavigateToSection = (sectionId) => {
+    if (window.location.pathname !== '/') {
+      navigate('/');
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    } else {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    setMobileOpen(false);
+  };
+
   const menuItems = [
     { text: 'Home', icon: <Home />, path: '/' },
     { text: 'Products', icon: <Inventory />, path: '/products' },
     { text: 'About', icon: <Info />, path: '/about' },
-    { text: 'Contact', icon: <ContactSupport />, path: '/contact' },
+    { text: 'Contact', icon: <ContactSupport />, action: () => handleNavigateToSection('contact') },
   ];
 
   const handleDrawerToggle = () => {
@@ -340,7 +373,7 @@ const Navbar = () => {
           <ListItem 
             button 
             key={item.text} 
-            onClick={() => handleNavigation(item.path)}
+            onClick={() => item.action ? item.action() : handleNavigation(item.path)}
             sx={{
               py: 1.5,
               '&:hover': {
@@ -381,7 +414,7 @@ const Navbar = () => {
 
   return (
     <>
-      <StyledAppBar position="fixed">
+      <StyledAppBar position="fixed" scrolled={scrolled}>
         <Container>
           <Toolbar sx={{ justifyContent: 'space-between', padding: '0.5rem 0' }}>
             <Box
@@ -411,7 +444,7 @@ const Navbar = () => {
             ) : (
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 {menuItems.map((item) => (
-                  <NavButton key={item.text} onClick={() => handleNavigation(item.path)}>
+                  <NavButton key={item.text} onClick={() => item.action ? item.action() : handleNavigation(item.path)}>
                     {item.text}
                   </NavButton>
                 ))}

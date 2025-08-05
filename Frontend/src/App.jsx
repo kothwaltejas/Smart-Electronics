@@ -1,12 +1,14 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import responsiveTheme from './theme/responsiveTheme';
 
 import Navbar from './components/common/Navbar';
+import LoadingScreen from './components/common/LoadingScreen';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import Home from './pages/Home';
+import About from './pages/About';
 import Products from './pages/Products';
 import ProductDetails from './pages/ProductDetails';
 import Cart from './pages/Cart';
@@ -34,23 +36,36 @@ const theme = {
     },
     background: {
       default: '#f5f5f7',
+      paper: '#ffffff',
     },
   },
 };
 
 function App() {
-  const [count, setCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading time
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <NotificationProvider>
-        <AuthProvider>
-          <CartProvider>
-            <Router>
-              <Navbar />
-              <Routes>
+      <LoadingScreen isLoading={isLoading} />
+      {!isLoading && (
+        <NotificationProvider>
+          <AuthProvider>
+            <CartProvider>
+              <Router>
+                <Navbar />
+                <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/about" element={<About />} />
                 <Route path="/products" element={<Products />} />
                 <Route path="/product/:id" element={<ProductDetails />} />
                 <Route path="/cart" element={<Cart />} />
@@ -102,6 +117,7 @@ function App() {
           </CartProvider>
         </AuthProvider>
       </NotificationProvider>
+      )}
     </ThemeProvider>
   );
 }
