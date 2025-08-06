@@ -70,6 +70,33 @@ const AuthForm = () => {
     setIsLogin(!isRegisterRoute);
   }, []);
 
+  // Clean up auth error flag when component mounts/unmounts
+  useEffect(() => {
+    // Clean up any previous auth error on mount
+    localStorage.removeItem('authError');
+    
+    // Cleanup on unmount
+    return () => {
+      localStorage.removeItem('authError');
+    };
+  }, []);
+
+  // Handle Enter key press to prevent form refresh
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (isLogin) {
+        handleLogin();
+      } else if (activeStep === 0 && !otpSent) {
+        handleSendOtp();
+      } else if (activeStep === 1 && otpSent && !otpVerified) {
+        handleVerifyOtp();
+      } else if (activeStep === 2 && otpVerified) {
+        handleCompleteRegistration();
+      }
+    }
+  };
+
   // Login Handler
   const handleLogin = async () => {
     if (!form.email || !form.password) {
@@ -92,6 +119,8 @@ const AuthForm = () => {
     setLoading(false);
     
     if (result.success) {
+      // Clear any previous auth error flag on successful login
+      localStorage.removeItem('authError');
       if (isAdminMode) {
         navigate('/admin'); // Navigate to admin dashboard
       } else {
@@ -103,7 +132,15 @@ const AuthForm = () => {
         setIsAdminMode(true);
         setError('Admin account detected. Please enter your admin security code below.');
       } else {
-        setError(result.error || 'Login failed');
+        // Signal that there was an auth error to prevent loading screen
+        localStorage.setItem('authError', 'true');
+        // Better error message for unregistered users
+        const errorMessage = result.error || 'Login failed';
+        if (errorMessage.includes('Invalid email or password')) {
+          setError('Account not found. Please check your credentials or register a new account.');
+        } else {
+          setError(errorMessage);
+        }
       }
     }
   };
@@ -500,6 +537,11 @@ const AuthForm = () => {
             {/* LOGIN FORM */}
             {isLogin ? (
               <Box
+                component="form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleLogin();
+                }}
                 sx={{
                   opacity: 1,
                   transform: 'translateY(0)',
@@ -513,6 +555,7 @@ const AuthForm = () => {
                   margin="normal" 
                   value={form.email} 
                   onChange={e => setForm(f => ({ ...f, email: e.target.value }))} 
+                  onKeyDown={handleKeyDown}
                   required
                   sx={{
                     '& .MuiOutlinedInput-root': {
@@ -534,6 +577,7 @@ const AuthForm = () => {
                   margin="normal" 
                   value={form.password} 
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))} 
+                  onKeyDown={handleKeyDown}
                   required
                   sx={{
                     '& .MuiOutlinedInput-root': {
@@ -569,6 +613,7 @@ const AuthForm = () => {
                     margin="normal" 
                     value={form.adminCode} 
                     onChange={e => setForm(f => ({ ...f, adminCode: e.target.value }))} 
+                    onKeyDown={handleKeyDown}
                     required
                     sx={{
                       '& .MuiOutlinedInput-root': {

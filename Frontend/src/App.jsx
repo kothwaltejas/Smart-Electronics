@@ -46,10 +46,19 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading time
+    // Simulate loading time, but skip if on login page or if there's an error in localStorage
+    const isLoginPage = window.location.pathname.includes('/login');
+    const hasAuthError = localStorage.getItem('authError');
+    
+    if (hasAuthError) {
+      localStorage.removeItem('authError');
+      setIsLoading(false);
+      return;
+    }
+    
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2500);
+    }, isLoginPage ? 500 : 2500); // Shorter loading for login page
 
     return () => clearTimeout(timer);
   }, []);

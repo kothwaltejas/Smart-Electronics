@@ -188,7 +188,7 @@ exports.login = async (req, res) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'No account found with this email address. Please check your email or register a new account.'
       });
     }
 
