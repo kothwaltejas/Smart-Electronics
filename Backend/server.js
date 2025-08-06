@@ -27,7 +27,7 @@ app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
 // CORS
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: ['http://localhost:5173', 'http://localhost:3000','http://smart-electronics.vercel.app'],
   credentials: true
 }));
 
