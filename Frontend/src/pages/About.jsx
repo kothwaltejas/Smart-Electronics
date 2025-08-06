@@ -475,7 +475,7 @@ const AboutPage = () => {
                   >
                     <Box
                       component="img"
-                      src="https://i.ibb.co/TBs2QhYz/founder.jpg"
+                      src="https://i.ibb.co/27ThzKWX/founder.jpg"
                       alt="Devidas Phapale - Founder"
                       sx={{
                         width: '100%',
