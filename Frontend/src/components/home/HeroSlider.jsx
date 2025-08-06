@@ -6,9 +6,6 @@ import { Box, Typography, Button, Container, Stack } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { ShoppingBag } from '@mui/icons-material';
 import axios from '../../api/axios';
-import gsmImage from '../../assets/images/GSM.png';
-import spdsImage from '../../assets/images/spds.png';
-import tpdsImage from '../../assets/images/TPDS.png';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
@@ -117,7 +114,7 @@ const slides = [
     description: 'Control your home appliances remotely with our advanced GSM technology. Perfect for modern smart homes.',
     features: ['Remote Control via SMS', 'Real-time Status Updates', 'Easy Installation'],
     buttonText: 'Shop Now',
-    image: gsmImage,
+    image: 'https://i.ibb.co/4wxWX5kt/GSM.png',
     searchTerm: 'GSM'
   },
   {
@@ -126,7 +123,7 @@ const slides = [
     description: 'Efficient power distribution system with smart monitoring and control capabilities.',
     features: ['Power Monitoring', 'Load Balancing', 'Energy Analytics'],
     buttonText: 'Buy Now',
-    image: spdsImage,
+    image: 'https://i.ibb.co/WvZ9Gkf3/spds.png',
     searchTerm: 'SPDS'
   },
   {
@@ -135,7 +132,7 @@ const slides = [
     description: 'Professional grade three-phase distribution system for industrial applications.',
     features: ['Phase Monitoring', 'Overload Protection', 'Industrial Grade'],
     buttonText: 'Buy Now',
-    image: tpdsImage,
+    image: 'https://i.ibb.co/tMV0K9Bg/TPDS.png',
     searchTerm: 'TPDS'
   },
 ];
