@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ||'http://localhost:5000/api', // use your backend base URL
+  baseURL: "https://smart-electronics-ne2p.onrender.com/api", // use your backend base URL
 });
 
 // Add a request interceptor to include the auth token
