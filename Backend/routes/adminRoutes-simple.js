@@ -82,4 +82,87 @@ router.get('/dashboard', async (req, res) => {
   }
 });
 
+// @route   PUT /api/admin/users/:id
+// @desc    Update user details
+router.put('/users/:id', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { name, email, role, phone } = req.body;
+    
+    console.log(`📝 Admin: Updating user ${userId}...`);
+    
+    // Remove undefined fields
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email;
+    if (role !== undefined) updateData.role = role;
+    if (phone !== undefined) updateData.phone = phone;
+    
+    const user = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    console.log(`✅ User ${userId} updated successfully`);
+    res.json({
+      success: true,
+      user: user,
+      message: 'User updated successfully'
+    });
+  } catch (error) {
+    console.error('❌ Error updating user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating user',
+      error: error.message
+    });
+  }
+});
+
+// @route   PUT /api/admin/users/:id/status
+// @desc    Update user status (block/unblock)
+router.put('/users/:id/status', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { status } = req.body;
+    
+    console.log(`🔒 Admin: Updating user ${userId} status to ${status}...`);
+    
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { status: status },
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    console.log(`✅ User ${userId} status updated to ${status}`);
+    res.json({
+      success: true,
+      user: user,
+      message: `User ${status === 'blocked' ? 'blocked' : 'unblocked'} successfully`
+    });
+  } catch (error) {
+    console.error('❌ Error updating user status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating user status',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

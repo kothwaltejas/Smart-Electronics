@@ -20,9 +20,9 @@ import AuthForm from './pages/AuthForm';
 import ForgotPassword from './pages/ForgotPassword';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
-import { CartProvider } from '@context/CartProvider';
-import { NotificationProvider } from '@context/NotificationProvider';
-import { AuthProvider } from '@context/AuthProvider';
+import { CartProvider } from './context/CartProvider';
+import { NotificationProvider } from './context/NotificationProvider';
+import { AuthProvider } from './context/AuthProvider';
 
 // Enhance the responsive theme with additional palette settings
 const theme = {

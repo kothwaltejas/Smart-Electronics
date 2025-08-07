@@ -6,6 +6,7 @@ const {
   createProduct,
   getProducts,
   getProductById,
+  updateProduct, // ✅ Add the update function
   deleteProduct, // ✅ Import the delete function
 } = require('../controllers/productController');
 
@@ -20,6 +21,11 @@ router.get('/', getProducts);
 // @route   GET /api/products/:id
 // @desc    Fetch product by ID
 router.get('/:id', getProductById);
+
+// ✅ NEW ROUTE
+// @route   PUT /api/products/:id
+// @desc    Update product by ID
+router.put('/:id', updateProduct);
 
 // ✅ NEW ROUTE
 // @route   DELETE /api/products/:id

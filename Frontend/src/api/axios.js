@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: "https://smart-electronics-ne2p.onrender.com/api", // use your backend base URL
+  baseURL: "https://smart-electronics-ne2p.onrender.com/api", // use your backend base URLbaseURL: "http://localhost:5000/api",
 });
 
 // Add a request interceptor to include the auth token
