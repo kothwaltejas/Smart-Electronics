@@ -101,7 +101,11 @@ const ProductCard = ({ product }) => {
               lineHeight: 1.4,
             }}
           >
-            {product.description}
+            {product.description ? 
+              product.description.split(' ').slice(0, 11).join(' ') + 
+              (product.description.split(' ').length > 11 ? '...' : '') 
+              : 'No description available'
+            }
           </Typography>
 
           <Typography

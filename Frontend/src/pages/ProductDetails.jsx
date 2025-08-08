@@ -125,7 +125,13 @@ const ProductDetails = () => {
                 <Typography variant="body2" sx={{ ml: 1 }}>({product.reviews || 0} reviews)</Typography>
               </Box>
 
-              <Typography variant="body1" sx={{ color: '#555' }}>{product.description}</Typography>
+              <Typography variant="body1" sx={{ color: '#555' }}>
+                {product.description ? 
+                  product.description.split(' ').slice(0, 11).join(' ') + 
+                  (product.description.split(' ').length > 11 ? '...' : '') 
+                  : 'No description available'
+                }
+              </Typography>
 
               <Typography variant="h5" fontWeight={600} color="success.main">
                 ₹{product.price?.toLocaleString()}
@@ -186,9 +192,22 @@ const ProductDetails = () => {
         </Tabs>
 
         {tabIndex === 0 && (
-          <Typography variant="body1" sx={{ color: '#555' }}>
-            {product.description}
-          </Typography>
+          <Box>
+            <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: '#2e7d32' }}>
+              Product Description
+            </Typography>
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                color: '#555', 
+                lineHeight: 1.8,
+                whiteSpace: 'pre-line',
+                textAlign: 'justify'
+              }}
+            >
+              {product.description || 'No detailed description available for this product.'}
+            </Typography>
+          </Box>
         )}
 
         {tabIndex === 1 && (
@@ -210,53 +229,114 @@ const ProductDetails = () => {
         {tabIndex === 2 && (
           <Stack spacing={2} alignItems="flex-start">
             {product.downloads && product.downloads.length > 0 ? (
-              product.downloads.map((download, index) => {
-                console.log('Rendering download:', download); // Debug log
-                
-                const handleDownload = async (e) => {
-                  e.preventDefault();
-                  console.log('Download button clicked:', download);
+              <>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  📄 Available downloads for this product:
+                </Typography>
+                {product.downloads.map((download, index) => {
+                  console.log('Rendering download:', download); // Debug log
                   
-                  try {
-                    // Use the download URL if available, otherwise use regular URL
-                    const downloadUrl = download.downloadUrl || download.link;
+                  const handleDownload = async (e) => {
+                    e.preventDefault();
+                    console.log('Download button clicked:', download);
                     
-                    // Create a temporary link for download
-                    const link = document.createElement('a');
-                    link.href = downloadUrl;
-                    link.download = `${download.label}.pdf`;
-                    link.target = '_blank';
-                    link.rel = 'noopener noreferrer';
-                    
-                    // Add to DOM, click, and remove
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                    console.log('Download initiated for:', downloadUrl);
-                  } catch (error) {
-                    console.error('Download error:', error);
-                    // Fallback: open in new tab
-                    window.open(download.link, '_blank', 'noopener,noreferrer');
-                  }
-                };
-                
-                return (
-                  <Button
-                    key={index}
-                    variant="outlined"
-                    startIcon={<FileDownload />}
-                    onClick={handleDownload}
-                    sx={{ borderColor: 'black', color: 'black' }}
-                  >
-                    {download.label} ({download.type}) - {download.fileSize || 'PDF'}
-                  </Button>
-                );
-              })
+                    try {
+                      // Use the download URL if available, otherwise use regular URL
+                      let downloadUrl = download.downloadUrl || download.url || download.link;
+                      
+                      // If it's a Cloudinary URL, ensure it has the right parameters for download
+                      if (downloadUrl && downloadUrl.includes('cloudinary.com')) {
+                        // For Cloudinary, use fetch and blob approach for proper PDF download
+                        const response = await fetch(downloadUrl);
+                        
+                        if (!response.ok) {
+                          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        
+                        const blob = await response.blob();
+                        
+                        // Create a proper filename with .pdf extension
+                        const filename = `${download.label || 'document'}.pdf`;
+                        
+                        // Create blob URL and download
+                        const blobUrl = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = blobUrl;
+                        link.download = filename;
+                        link.style.display = 'none';
+                        
+                        // Add to DOM, click, and cleanup
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        // Clean up the blob URL
+                        setTimeout(() => {
+                          window.URL.revokeObjectURL(blobUrl);
+                        }, 100);
+                        
+                        console.log(`Download initiated successfully: ${filename}`);
+                      } else {
+                        // Fallback for non-Cloudinary URLs
+                        const link = document.createElement('a');
+                        link.href = downloadUrl;
+                        link.download = `${download.label || 'document'}.pdf`;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        console.log('Download initiated with fallback method');
+                      }
+                      
+                    } catch (error) {
+                      console.error('Download error:', error);
+                      
+                      // Ultimate fallback: open in new tab
+                      try {
+                        const fallbackUrl = download.downloadUrl || download.url || download.link;
+                        if (fallbackUrl) {
+                          window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
+                          console.log('Opened in new tab as fallback');
+                        }
+                      } catch (fallbackError) {
+                        alert(`Download failed: ${error.message}. Please try again or contact support.`);
+                      }
+                    }
+                  };
+                  
+                  return (
+                    <Button
+                      key={index}
+                      variant="outlined"
+                      startIcon={<FileDownload />}
+                      onClick={handleDownload}
+                      sx={{ 
+                        borderColor: 'black', 
+                        color: 'black',
+                        '&:hover': {
+                          backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                          borderColor: 'black'
+                        }
+                      }}
+                    >
+                      Download {download.label} {download.type && `(${download.type})`} 
+                      {download.fileSize && ` - ${download.fileSize}`}
+                    </Button>
+                  );
+                })}
+              </>
             ) : (
-              <Typography variant="body1" color="text.secondary">
-                No downloads available for this product.
-              </Typography>
+              <Box sx={{ textAlign: 'center', py: 3 }}>
+                <Typography variant="body1" color="text.secondary" gutterBottom>
+                  📄 No downloads available for this product.
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  User manuals and datasheets will appear here when available.
+                </Typography>
+              </Box>
             )}
           </Stack>
         )}

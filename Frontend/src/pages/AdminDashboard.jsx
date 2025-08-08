@@ -28,6 +28,7 @@ import {
   Select,
   MenuItem,
   Chip,
+  CircularProgress,
   Avatar,
   Alert,
   Divider,
@@ -40,7 +41,6 @@ import {
   ListItemSecondaryAction,
   LinearProgress,
   Badge,
-  CircularProgress,
 } from '@mui/material';
 import {
   Dashboard,
@@ -74,8 +74,8 @@ import {
   Receipt,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import { useAuth } from '@context/AuthProvider';
-import { useNotification } from '@context/NotificationProvider';
+import { useAuth } from '../context/AuthProvider';
+import { useNotification } from '../context/NotificationProvider';
 import { useNavigate } from 'react-router-dom';
 import axios from '../api/axios';
 
@@ -271,6 +271,17 @@ const AdminDashboard = () => {
     link: '',
     fileSize: ''
   });
+  
+  // PDF Upload Dialog State
+  const [pdfUploadDialogOpen, setPdfUploadDialogOpen] = useState(false);
+  const [selectedPdfFile, setSelectedPdfFile] = useState(null);
+  const [pdfUploadData, setPdfUploadData] = useState({
+    label: '',
+    type: 'manual'
+  });
+
+  // Loading states for operations
+  const [addingProduct, setAddingProduct] = useState(false);
 
   // User management state
   const [userViewDialogOpen, setUserViewDialogOpen] = useState(false);
@@ -290,11 +301,46 @@ const AdminDashboard = () => {
   const [productViewDialogOpen, setProductViewDialogOpen] = useState(false);
   const [selectedProductForView, setSelectedProductForView] = useState(null);
 
-  const { user, isAuthenticated, isLoading, logout } = useAuth();
-  const { showNotification } = useNotification();
-  const navigate = useNavigate();
+  // Get hooks with error handling
+  let user, isAuthenticated, isLoading, logout, showNotification, navigate;
+  
+  try {
+    const authContext = useAuth();
+    const notificationContext = useNotification();
+    navigate = useNavigate();
+    
+    if (!authContext || !notificationContext) {
+      throw new Error('Context not available');
+    }
+    
+    ({ user, isAuthenticated, isLoading, logout } = authContext);
+    ({ showNotification } = notificationContext);
+  } catch (error) {
+    console.error('Context error in AdminDashboard:', error);
+    return (
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Box textAlign="center">
+          <Typography variant="h5" color="error" gutterBottom>
+            Context Error
+          </Typography>
+          <Typography variant="body1">
+            There was an error loading the application context. Please refresh the page.
+          </Typography>
+          <Button variant="contained" sx={{ mt: 2 }} onClick={() => window.location.reload()}>
+            Refresh Page
+          </Button>
+        </Box>
+      </Container>
+    );
+  }
 
   useEffect(() => {
+    // Add safety checks for context values
+    if (!showNotification || !navigate) {
+      console.error('AdminDashboard - Missing context functions');
+      return;
+    }
+
     console.log('AdminDashboard - Auth check:', { isAuthenticated, user, userRole: user?.role, isLoading });
     
     // Don't do anything while still loading
@@ -310,7 +356,7 @@ const AdminDashboard = () => {
     }
     console.log('AdminDashboard - Access granted, fetching data...');
     fetchDashboardData();
-  }, [isAuthenticated, user, navigate, isLoading]);
+  }, [isAuthenticated, user, navigate, isLoading, showNotification]);
 
   const fetchDashboardData = async (showRefreshIndicator = false) => {
     try {
@@ -451,7 +497,10 @@ const AdminDashboard = () => {
 
   // Product management functions
   const handleAddProduct = async () => {
+    if (addingProduct) return; // Prevent multiple submissions
+    
     try {
+      setAddingProduct(true);
       console.log('handleAddProduct called with:', newProduct);
       
       // Check if required fields are present
@@ -463,8 +512,8 @@ const AdminDashboard = () => {
       // Validate and clean data before sending
       const productData = {
         name: newProduct.name.trim(),
-        description: newProduct.description?.trim() || '',
-        category: newProduct.category || '',
+        description: newProduct.description?.trim() || 'No description available',
+        category: newProduct.category || 'General',
         price: parseFloat(newProduct.price),
         image: newProduct.image?.trim() || '',
         stock: parseInt(newProduct.stock) || 0,
@@ -497,7 +546,8 @@ const AdminDashboard = () => {
         fileSize: ''
       });
       showNotification('Product added successfully!', 'success');
-      fetchDashboardData(true);
+      // Remove the fetchDashboardData call to prevent refresh loop
+      // fetchDashboardData(true);
     } catch (error) {
       console.error('Error adding product:', error);
       console.error('Error details:', {
@@ -518,6 +568,8 @@ const AdminDashboard = () => {
       }
       
       showNotification(`Error adding product: ${errorMessage}`, 'error');
+    } finally {
+      setAddingProduct(false);
     }
   };
 
@@ -565,14 +617,14 @@ const AdminDashboard = () => {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await axios.post('/upload/upload', formData, {
+      const response = await axios.post('/upload/image', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      if (response.data.success) {
-        const imageUrl = response.data.data.url;
+      if (response.data.imageUrl) {
+        const imageUrl = response.data.imageUrl;
         
         if (isEdit && editProduct) {
           setEditProduct({...editProduct, image: imageUrl});
@@ -585,20 +637,23 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error('Error uploading image:', error);
-      showNotification('Error uploading image', 'error');
+      showNotification(`Error uploading image: ${error.response?.data?.message || error.message}`, 'error');
       return null;
     }
   };
 
-  const handlePdfUpload = async (file, isEdit = false) => {
+  const handlePdfUpload = async (file, uploadData, isEdit = false) => {
     try {
-      if (!newDownload.label || !newDownload.type) {
-        showNotification('Please fill in document label and type first', 'error');
+      if (!uploadData.label || !uploadData.type) {
+        showNotification('Please fill in document label and type', 'error');
         return;
       }
 
+      console.log('📁 Starting PDF upload...', { file, uploadData });
+
       const formData = new FormData();
       formData.append('pdf', file);
+      formData.append('filename', file.name);
 
       const response = await axios.post('/upload/upload-pdf', formData, {
         headers: {
@@ -606,18 +661,25 @@ const AdminDashboard = () => {
         },
       });
 
+      console.log('📤 Upload response:', response.data);
+
       if (response.data.success) {
+        // Safely access the response data with fallbacks
+        const responseData = response.data.data || response.data;
+        
         const pdfData = {
-          label: newDownload.label,
-          url: response.data.data.url, // Cloudinary URL
-          directDownloadUrl: response.data.data.directDownloadUrl, // Direct download URL
-          backendDownloadUrl: response.data.data.backendDownloadUrl, // Backend endpoint URL
-          publicId: response.data.data.publicId,
-          originalName: response.data.data.originalName,
-          type: newDownload.type,
-          fileSize: response.data.data.fileSize,
+          label: uploadData.label,
+          url: responseData.url || '#', // Regular Cloudinary URL
+          downloadUrl: responseData.directDownloadUrl || responseData.url || '#', // Direct download URL with attachment
+          link: responseData.directDownloadUrl || responseData.url || '#', // Fallback for compatibility
+          publicId: responseData.publicId || 'unknown',
+          originalName: responseData.originalName || file.name,
+          type: uploadData.type,
+          fileSize: responseData.fileSize || 'Unknown size',
           uploadedAt: new Date()
         };
+        
+        console.log('📄 Created PDF data:', pdfData);
         
         if (isEdit && editProduct) {
           const downloads = [...(editProduct.downloads || []), pdfData];
@@ -627,21 +689,53 @@ const AdminDashboard = () => {
           setNewProduct({...newProduct, downloads});
         }
         
-        // Reset download form
-        setNewDownload({
-          label: '',
-          type: '',
-          link: '',
-          fileSize: ''
-        });
-        
         showNotification('PDF uploaded successfully!', 'success');
         return pdfData;
+      } else {
+        throw new Error(response.data.message || 'Upload failed');
       }
     } catch (error) {
-      console.error('Error uploading PDF:', error);
-      showNotification('Error uploading PDF', 'error');
+      console.error('❌ Error uploading PDF:', error);
+      console.error('📋 Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
+      showNotification(`Error uploading PDF: ${errorMessage}`, 'error');
       return null;
+    }
+  };
+
+  // Handle PDF file selection and open dialog
+  const handlePdfFileSelect = (file, isEdit = false) => {
+    if (file.size > 10 * 1024 * 1024) {
+      showNotification('PDF file size must be less than 10MB', 'error');
+      return;
+    }
+    
+    setSelectedPdfFile({ file, isEdit });
+    setPdfUploadData({
+      label: '',
+      type: 'manual'
+    });
+    setPdfUploadDialogOpen(true);
+  };
+
+  // Confirm PDF upload with user-provided details
+  const confirmPdfUpload = async () => {
+    if (!selectedPdfFile) return;
+    
+    try {
+      await handlePdfUpload(selectedPdfFile.file, pdfUploadData, selectedPdfFile.isEdit);
+      
+      // Reset and close dialog
+      setPdfUploadDialogOpen(false);
+      setSelectedPdfFile(null);
+      setPdfUploadData({ label: '', type: 'manual' });
+    } catch (error) {
+      console.error('Error in PDF upload confirmation:', error);
     }
   };
 
@@ -1378,7 +1472,11 @@ const AdminDashboard = () => {
                                 {product.name}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                {product.description?.substring(0, 50)}...
+                                {product.description ? 
+                                  product.description.split(' ').slice(0, 8).join(' ') + 
+                                  (product.description.split(' ').length > 8 ? '...' : '') 
+                                  : 'No description'
+                                }
                               </Typography>
                             </Box>
                           </Box>
@@ -1465,7 +1563,7 @@ const AdminDashboard = () => {
         <Dialog 
           open={productDialogOpen} 
           onClose={() => setProductDialogOpen(false)}
-          maxWidth="md"
+          maxWidth="lg"
           fullWidth
         >
           <DialogTitle>
@@ -1474,155 +1572,208 @@ const AdminDashboard = () => {
               Add New Product
             </Box>
           </DialogTitle>
-          <DialogContent>
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Product Name"
-                  value={newProduct.name}
-                  onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
-                  variant="outlined"
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Category</InputLabel>
-                  <Select
-                    value={newProduct.category}
-                    onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
-                  >
-                    <MenuItem value="Smart Switches">Smart Switches</MenuItem>
-                    <MenuItem value="Automation">Automation</MenuItem>
-                    <MenuItem value="Security">Security</MenuItem>
-                    <MenuItem value="Lighting">Lighting</MenuItem>
-                    <MenuItem value="General">General</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Description"
-                  value={newProduct.description}
-                  onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
-                  multiline
-                  rows={3}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label="Price (₹)"
-                  type="number"
-                  value={newProduct.price}
-                  onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label="Stock Quantity"
-                  type="number"
-                  value={newProduct.stock}
-                  onChange={(e) => setNewProduct({...newProduct, stock: e.target.value})}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  label="Image URL"
-                  value={newProduct.image}
-                  onChange={(e) => setNewProduct({...newProduct, image: e.target.value})}
-                  placeholder="https://example.com/image.jpg"
-                  helperText="Enter a valid image URL or upload a file below"
-                />
-              </Grid>
-              
-              {/* File Upload Option */}
-              <Grid item xs={12}>
-                <Box sx={{ mt: 1, mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Or upload an image file:
-                  </Typography>
-                  <input
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    id="image-upload-new"
-                    type="file"
-                    onChange={async (e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        if (file.size > 5 * 1024 * 1024) {
-                          showNotification('File size must be less than 5MB', 'error');
-                          return;
-                        }
-                        await handleImageUpload(file, false);
-                      }
-                    }}
-                  />
-                  <label htmlFor="image-upload-new">
-                    <Button
+          <DialogContent sx={{ pb: 1 }}>
+            <Box sx={{ mt: 2 }}>
+              {/* Basic Information Card */}
+              <Paper elevation={1} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+                <Typography variant="h6" gutterBottom color="primary" sx={{ mb: 2 }}>
+                  📝 Basic Information
+                </Typography>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={8}>
+                    <TextField
+                      fullWidth
+                      label="Product Name"
+                      value={newProduct.name}
+                      onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
                       variant="outlined"
-                      component="span"
-                      startIcon={<CloudUpload />}
-                      sx={{ mr: 2 }}
+                      placeholder="Enter product name"
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <FormControl fullWidth>
+                      <InputLabel>Category</InputLabel>
+                      <Select
+                        value={newProduct.category}
+                        onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                      >
+                        <MenuItem value="Smart Switches">Smart Switches</MenuItem>
+                        <MenuItem value="Automation">Automation</MenuItem>
+                        <MenuItem value="Security">Security</MenuItem>
+                        <MenuItem value="Lighting">Lighting</MenuItem>
+                        <MenuItem value="General">General</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Product Description"
+                      value={newProduct.description}
+                      onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                      multiline
+                      rows={3}
+                      placeholder="Describe your product features and benefits..."
+                      helperText="💡 Tip: First 10-11 words appear on product cards"
+                    />
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              {/* Pricing & Stock Card */}
+              <Paper elevation={1} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+                <Typography variant="h6" gutterBottom color="primary" sx={{ mb: 2 }}>
+                  💰 Pricing & Inventory
+                </Typography>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Price (₹)"
+                      type="number"
+                      value={newProduct.price}
+                      onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
+                      InputProps={{
+                        startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₹</Typography>
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Stock Quantity"
+                      type="number"
+                      value={newProduct.stock}
+                      onChange={(e) => setNewProduct({...newProduct, stock: e.target.value})}
+                      InputProps={{
+                        endAdornment: <Typography variant="body2" color="text.secondary">units</Typography>
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              {/* Product Image Card */}
+              <Paper elevation={1} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+                <Typography variant="h6" gutterBottom color="primary" sx={{ mb: 2 }}>
+                  🖼️ Product Image
+                </Typography>
+                <Grid container spacing={3} alignItems="center">
+                  <Grid item xs={12} md={8}>
+                    <TextField
+                      fullWidth
+                      label="Image URL"
+                      value={newProduct.image}
+                      onChange={(e) => setNewProduct({...newProduct, image: e.target.value})}
+                      placeholder="https://example.com/product-image.jpg"
+                    />
+                    <Box sx={{ mt: 2 }}>
+                      <input
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        id="image-upload-new"
+                        type="file"
+                        onChange={async (e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            if (file.size > 10 * 1024 * 1024) {
+                              showNotification('File size must be less than 10MB', 'error');
+                              return;
+                            }
+                            await handleImageUpload(file, false);
+                          }
+                        }}
+                      />
+                      <label htmlFor="image-upload-new">
+                        <Button
+                          variant="outlined"
+                          component="span"
+                          startIcon={<CloudUpload />}
+                          size="small"
+                        >
+                          Upload Image
+                        </Button>
+                      </label>
+                      <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>
+                        Max 10MB • JPG, PNG, WebP
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Preview:
+                      </Typography>
+                      {newProduct.image ? (
+                        <Avatar 
+                          src={newProduct.image} 
+                          variant="rounded"
+                          sx={{ width: 120, height: 120, mx: 'auto', border: '2px solid #e0e0e0' }}
+                        >
+                          <Inventory sx={{ fontSize: 40 }} />
+                        </Avatar>
+                      ) : (
+                        <Box 
+                          sx={{ 
+                            width: 120, 
+                            height: 120, 
+                            mx: 'auto',
+                            border: '2px dashed #e0e0e0', 
+                            borderRadius: 2,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: '#f9f9f9'
+                          }}
+                        >
+                          <Inventory sx={{ fontSize: 40, color: '#bbb' }} />
+                        </Box>
+                      )}
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              {/* Features Card */}
+              <Paper elevation={1} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+                <Typography variant="h6" gutterBottom color="primary" sx={{ mb: 2 }}>
+                  ⭐ Product Features
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Add Feature"
+                      placeholder="e.g., Wi-Fi Enabled, Voice Control, Smart Scheduling"
+                      value={newFeature}
+                      onChange={(e) => setNewFeature(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && newFeature.trim()) {
+                          const features = [...newProduct.features, newFeature.trim()];
+                          setNewProduct({...newProduct, features});
+                          setNewFeature('');
+                        }
+                      }}
+                    />
+                    <Button
+                      variant="contained"
+                      onClick={() => {
+                        if (newFeature.trim()) {
+                          const features = [...newProduct.features, newFeature.trim()];
+                          setNewProduct({...newProduct, features});
+                          setNewFeature('');
+                        }
+                      }}
+                      disabled={!newFeature.trim()}
+                      sx={{ minWidth: 'auto', px: 2 }}
                     >
-                      Upload Image
+                      Add
                     </Button>
-                  </label>
-                  <Typography variant="caption" color="text.secondary">
-                    Max size: 5MB • Formats: JPG, PNG, WebP
-                  </Typography>
+                  </Box>
                 </Box>
-              </Grid>
-              
-              {/* Features Section */}
-              <Grid item xs={12}>
-                <Box sx={{ mt: 2, mb: 1 }}>
-                  <Typography variant="h6" gutterBottom>
-                    Product Features
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Add key features that make this product unique
-                  </Typography>
-                </Box>
-              </Grid>
-              
-              <Grid item xs={12}>
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-                  <TextField
-                    fullWidth
-                    label="Add Feature"
-                    placeholder="e.g., Wi-Fi Enabled, Voice Control, Smart Scheduling"
-                    value={newFeature}
-                    onChange={(e) => setNewFeature(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && newFeature.trim()) {
-                        const features = [...newProduct.features, newFeature.trim()];
-                        setNewProduct({...newProduct, features});
-                        setNewFeature('');
-                      }
-                    }}
-                  />
-                  <Button
-                    variant="outlined"
-                    onClick={() => {
-                      if (newFeature.trim()) {
-                        const features = [...newProduct.features, newFeature.trim()];
-                        setNewProduct({...newProduct, features});
-                        setNewFeature('');
-                      }
-                    }}
-                    disabled={!newFeature.trim()}
-                  >
-                    Add
-                  </Button>
-                </Box>
-              </Grid>
-              
-              {newProduct.features.length > 0 && (
-                <Grid item xs={12}>
+                
+                {newProduct.features.length > 0 && (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     {newProduct.features.map((feature, index) => (
                       <Chip
@@ -1634,67 +1785,30 @@ const AdminDashboard = () => {
                         }}
                         color="primary"
                         variant="outlined"
+                        size="small"
                       />
                     ))}
                   </Box>
-                </Grid>
-              )}
-              
-              {/* Downloads Section */}
-              <Grid item xs={12}>
-                <Box sx={{ mt: 2, mb: 1 }}>
-                  <Typography variant="h6" gutterBottom>
-                    User Manuals & Downloads
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Upload PDF manuals, datasheets, and other downloadable resources
-                  </Typography>
-                </Box>
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Document Label"
-                  placeholder="e.g., User Manual, Installation Guide, Datasheet"
-                  value={newDownload.label}
-                  onChange={(e) => setNewDownload({...newDownload, label: e.target.value})}
-                />
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Document Type</InputLabel>
-                  <Select
-                    value={newDownload.type}
-                    onChange={(e) => setNewDownload({...newDownload, type: e.target.value})}
-                  >
-                    <MenuItem value="manual">User Manual</MenuItem>
-                    <MenuItem value="datasheet">Datasheet</MenuItem>
-                    <MenuItem value="software">Software/Firmware</MenuItem>
-                    <MenuItem value="driver">Driver</MenuItem>
-                    <MenuItem value="guide">Installation Guide</MenuItem>
-                    <MenuItem value="other">Other</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              
-              <Grid item xs={12}>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                )}
+              </Paper>
+
+              {/* Downloads Card */}
+              <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
+                <Typography variant="h6" gutterBottom color="primary" sx={{ mb: 2 }}>
+                  📄 Documents & Downloads
+                </Typography>
+                <Box sx={{ mb: 2 }}>
                   <input
                     accept="application/pdf"
                     style={{ display: 'none' }}
                     id="pdf-upload-new"
                     type="file"
-                    onChange={async (e) => {
+                    onChange={(e) => {
                       const file = e.target.files[0];
                       if (file) {
-                        if (file.size > 10 * 1024 * 1024) {
-                          showNotification('PDF file size must be less than 10MB', 'error');
-                          return;
-                        }
-                        await handlePdfUpload(file, false);
+                        handlePdfFileSelect(file, false);
                       }
+                      e.target.value = '';
                     }}
                   />
                   <label htmlFor="pdf-upload-new">
@@ -1702,34 +1816,44 @@ const AdminDashboard = () => {
                       variant="outlined"
                       component="span"
                       startIcon={<CloudUpload />}
-                      disabled={!newDownload.label || !newDownload.type}
                     >
-                      Upload PDF
+                      Upload PDF Document
                     </Button>
                   </label>
-                  <Typography variant="caption" color="text.secondary">
-                    Max size: 10MB • Format: PDF only
+                  <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>
+                    Max 10MB • PDF only
                   </Typography>
                 </Box>
-              </Grid>
-              
-              {newProduct.downloads.length > 0 && (
-                <Grid item xs={12}>
-                  <Box sx={{ mt: 1 }}>
+                
+                {newProduct.downloads.length > 0 && (
+                  <Box sx={{ mt: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>
                       Uploaded Documents:
                     </Typography>
                     {newProduct.downloads.map((download, index) => (
-                      <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 1 }}>
-                        <Typography variant="body2" sx={{ flex: 1 }}>
-                          {download.label} ({download.type})
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {download.fileSize}
-                        </Typography>
+                      <Box key={index} sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 2, 
+                        p: 2, 
+                        border: '1px solid', 
+                        borderColor: 'divider', 
+                        borderRadius: 1, 
+                        mb: 1,
+                        backgroundColor: '#f9f9f9'
+                      }}>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="body2" fontWeight={500}>
+                            {download.label}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {download.type} • {download.fileSize}
+                          </Typography>
+                        </Box>
                         <Button
                           size="small"
                           color="error"
+                          variant="outlined"
                           onClick={() => {
                             const downloads = newProduct.downloads.filter((_, i) => i !== index);
                             setNewProduct({...newProduct, downloads});
@@ -1740,77 +1864,16 @@ const AdminDashboard = () => {
                       </Box>
                     ))}
                   </Box>
-                </Grid>
-              )}
-              
-              {/* Debug Info (Remove this in production) */}
-              <Grid item xs={12}>
-                <Box sx={{ p: 1, bgcolor: 'grey.100', borderRadius: 1, fontSize: '12px' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Debug: Name: "{newProduct.name}" | Price: "{newProduct.price}" | Features: {newProduct.features.length} | Downloads: {newProduct.downloads.length} | Button Enabled: {newProduct.name && newProduct.price ? 'Yes' : 'No'}
-                  </Typography>
-                </Box>
-              </Grid>
-              
-              {/* Image Preview */}
-              <Grid item xs={12}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Image Preview:
-                </Typography>
-                {newProduct.image ? (
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <Avatar 
-                      src={newProduct.image} 
-                      variant="rounded"
-                      sx={{ width: 80, height: 80 }}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    >
-                      <Inventory sx={{ fontSize: 30 }} />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="caption" color="success.main">
-                        ✓ Image loaded successfully
-                      </Typography>
-                      <Typography variant="caption" display="block" color="text.secondary">
-                        Image will be displayed like this in the product list
-                      </Typography>
-                    </Box>
-                  </Box>
-                ) : (
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <Avatar 
-                      variant="rounded"
-                      sx={{ width: 80, height: 80, bgcolor: 'grey.200' }}
-                    >
-                      <Inventory sx={{ fontSize: 30, color: 'grey.500' }} />
-                    </Avatar>
-                    <Typography variant="caption" color="text.secondary">
-                      No image URL provided - default icon will be shown
-                    </Typography>
-                  </Box>
                 )}
-              </Grid>
-              
-              {/* Helpful Tips */}
-              <Grid item xs={12}>
-                <Box sx={{ p: 2, bgcolor: 'info.light', borderRadius: 1, mt: 1 }}>
-                  <Typography variant="subtitle2" color="info.contrastText" gutterBottom>
-                    💡 Image URL Tips:
-                  </Typography>
-                  <Typography variant="caption" color="info.contrastText" component="div">
-                    • Use free sources: Unsplash, Pexels, or product manufacturer websites<br/>
-                    • Recommended size: 500x500px or larger<br/>
-                    • Supported formats: JPG, PNG, WebP<br/>
-                    • Example: https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=500&h=500&fit=crop
-                  </Typography>
-                </Box>
-              </Grid>
-            </Grid>
+              </Paper>
+            </Box>
           </DialogContent>
-          <DialogActions sx={{ p: 3 }}>
-            <Button onClick={() => setProductDialogOpen(false)}>
+          <DialogActions sx={{ p: 3, backgroundColor: '#f9f9f9' }}>
+            <Button 
+              onClick={() => setProductDialogOpen(false)}
+              color="inherit"
+              sx={{ mr: 1 }}
+            >
               Cancel
             </Button>
             <Button 
@@ -1819,9 +1882,10 @@ const AdminDashboard = () => {
                 handleAddProduct();
               }} 
               variant="contained"
-              disabled={!newProduct.name || !newProduct.price}
+              disabled={!newProduct.name || !newProduct.price || addingProduct}
+              startIcon={addingProduct ? <CircularProgress size={20} color="inherit" /> : <Add />}
             >
-              Add Product
+              {addingProduct ? 'Adding...' : 'Add Product'}
             </Button>
           </DialogActions>
         </Dialog>
@@ -1830,7 +1894,7 @@ const AdminDashboard = () => {
         <Dialog 
           open={!!editProduct} 
           onClose={() => setEditProduct(null)}
-          maxWidth="md"
+          maxWidth="lg"
           fullWidth
         >
           <DialogTitle>
@@ -1839,196 +1903,208 @@ const AdminDashboard = () => {
               Edit Product
             </Box>
           </DialogTitle>
-          <DialogContent>
+          <DialogContent sx={{ pb: 1 }}>
             {editProduct && (
-              <Grid container spacing={2} sx={{ mt: 1 }}>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Product Name"
-                    value={editProduct.name}
-                    onChange={(e) => setEditProduct({...editProduct, name: e.target.value})}
-                  />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Category</InputLabel>
-                    <Select
-                      value={editProduct.category || ''}
-                      onChange={(e) => setEditProduct({...editProduct, category: e.target.value})}
-                    >
-                      <MenuItem value="Smart Switches">Smart Switches</MenuItem>
-                      <MenuItem value="Automation">Automation</MenuItem>
-                      <MenuItem value="Security">Security</MenuItem>
-                      <MenuItem value="Lighting">Lighting</MenuItem>
-                      <MenuItem value="General">General</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Description"
-                    value={editProduct.description || ''}
-                    onChange={(e) => setEditProduct({...editProduct, description: e.target.value})}
-                    multiline
-                    rows={3}
-                  />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <TextField
-                    fullWidth
-                    label="Price (₹)"
-                    type="number"
-                    value={editProduct.price}
-                    onChange={(e) => setEditProduct({...editProduct, price: e.target.value})}
-                  />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <TextField
-                    fullWidth
-                    label="Stock Quantity"
-                    type="number"
-                    value={editProduct.stock || 0}
-                    onChange={(e) => setEditProduct({...editProduct, stock: e.target.value})}
-                  />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <TextField
-                    fullWidth
-                    label="Image URL"
-                    value={editProduct.image || ''}
-                    onChange={(e) => setEditProduct({...editProduct, image: e.target.value})}
-                    placeholder="https://example.com/image.jpg"
-                    helperText="Enter a valid image URL or upload a file below"
-                  />
-                </Grid>
-                
-                {/* File Upload Option for Edit */}
-                <Grid item xs={12}>
-                  <Box sx={{ mt: 1, mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Or upload a new image file:
-                    </Typography>
-                    <input
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      id="image-upload-edit"
-                      type="file"
-                      onChange={async (e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          if (file.size > 5 * 1024 * 1024) {
-                            showNotification('File size must be less than 5MB', 'error');
-                            return;
-                          }
-                          await handleImageUpload(file, true);
-                        }
-                      }}
-                    />
-                    <label htmlFor="image-upload-edit">
-                      <Button
-                        variant="outlined"
-                        component="span"
-                        startIcon={<CloudUpload />}
-                        sx={{ mr: 2 }}
-                      >
-                        Upload New Image
-                      </Button>
-                    </label>
-                    <Typography variant="caption" color="text.secondary">
-                      Max size: 5MB • Formats: JPG, PNG, WebP
-                    </Typography>
-                  </Box>
-                </Grid>
-                
-                {/* Image Preview for Edit */}
-                <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Image Preview:
+              <Box sx={{ mt: 2 }}>
+                {/* Basic Information Card */}
+                <Paper elevation={1} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+                  <Typography variant="h6" gutterBottom color="primary" sx={{ mb: 2 }}>
+                    📝 Basic Information
                   </Typography>
-                  {editProduct.image ? (
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <Avatar 
-                        src={editProduct.image} 
-                        variant="rounded"
-                        sx={{ width: 80, height: 80 }}
-                        onError={(e) => {
-                          e.target.style.display = 'none';
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} md={8}>
+                      <TextField
+                        fullWidth
+                        label="Product Name"
+                        value={editProduct.name}
+                        onChange={(e) => setEditProduct({...editProduct, name: e.target.value})}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <FormControl fullWidth>
+                        <InputLabel>Category</InputLabel>
+                        <Select
+                          value={editProduct.category || ''}
+                          onChange={(e) => setEditProduct({...editProduct, category: e.target.value})}
+                        >
+                          <MenuItem value="Smart Switches">Smart Switches</MenuItem>
+                          <MenuItem value="Automation">Automation</MenuItem>
+                          <MenuItem value="Security">Security</MenuItem>
+                          <MenuItem value="Lighting">Lighting</MenuItem>
+                          <MenuItem value="General">General</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Product Description"
+                        value={editProduct.description || ''}
+                        onChange={(e) => setEditProduct({...editProduct, description: e.target.value})}
+                        multiline
+                        rows={3}
+                        placeholder="Describe your product features and benefits..."
+                        helperText="💡 Tip: First 10-11 words appear on product cards"
+                      />
+                    </Grid>
+                  </Grid>
+                </Paper>
+
+                {/* Pricing & Stock Card */}
+                <Paper elevation={1} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+                  <Typography variant="h6" gutterBottom color="primary" sx={{ mb: 2 }}>
+                    💰 Pricing & Inventory
+                  </Typography>
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Price (₹)"
+                        type="number"
+                        value={editProduct.price}
+                        onChange={(e) => setEditProduct({...editProduct, price: e.target.value})}
+                        InputProps={{
+                          startAdornment: <Typography variant="body1" sx={{ mr: 1 }}>₹</Typography>
                         }}
-                      >
-                        <Inventory sx={{ fontSize: 30 }} />
-                      </Avatar>
-                      <Box>
-                        <Typography variant="caption" color="success.main">
-                          ✓ Image loaded successfully
-                        </Typography>
-                        <Typography variant="caption" display="block" color="text.secondary">
-                          Updated image preview
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Stock Quantity"
+                        type="number"
+                        value={editProduct.stock || 0}
+                        onChange={(e) => setEditProduct({...editProduct, stock: e.target.value})}
+                        InputProps={{
+                          endAdornment: <Typography variant="body2" color="text.secondary">units</Typography>
+                        }}
+                      />
+                    </Grid>
+                  </Grid>
+                </Paper>
+
+                {/* Product Image Card */}
+                <Paper elevation={1} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+                  <Typography variant="h6" gutterBottom color="primary" sx={{ mb: 2 }}>
+                    🖼️ Product Image
+                  </Typography>
+                  <Grid container spacing={3} alignItems="center">
+                    <Grid item xs={12} md={8}>
+                      <TextField
+                        fullWidth
+                        label="Image URL"
+                        value={editProduct.image || ''}
+                        onChange={(e) => setEditProduct({...editProduct, image: e.target.value})}
+                        placeholder="https://example.com/product-image.jpg"
+                      />
+                      <Box sx={{ mt: 2 }}>
+                        <input
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          id="image-upload-edit"
+                          type="file"
+                          onChange={async (e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              if (file.size > 10 * 1024 * 1024) {
+                                showNotification('File size must be less than 10MB', 'error');
+                                return;
+                              }
+                              await handleImageUpload(file, true);
+                            }
+                          }}
+                        />
+                        <label htmlFor="image-upload-edit">
+                          <Button
+                            variant="outlined"
+                            component="span"
+                            startIcon={<CloudUpload />}
+                            size="small"
+                          >
+                            Upload New Image
+                          </Button>
+                        </label>
+                        <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>
+                          Max 10MB • JPG, PNG, WebP
                         </Typography>
                       </Box>
-                    </Box>
-                  ) : (
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <Avatar 
-                        variant="rounded"
-                        sx={{ width: 80, height: 80, bgcolor: 'grey.200' }}
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <Box sx={{ textAlign: 'center' }}>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          Current Image:
+                        </Typography>
+                        {editProduct.image ? (
+                          <Avatar 
+                            src={editProduct.image} 
+                            variant="rounded"
+                            sx={{ width: 120, height: 120, mx: 'auto', border: '2px solid #e0e0e0' }}
+                          >
+                            <Inventory sx={{ fontSize: 40 }} />
+                          </Avatar>
+                        ) : (
+                          <Box 
+                            sx={{ 
+                              width: 120, 
+                              height: 120, 
+                              mx: 'auto',
+                              border: '2px dashed #e0e0e0', 
+                              borderRadius: 2,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              backgroundColor: '#f9f9f9'
+                            }}
+                          >
+                            <Inventory sx={{ fontSize: 40, color: '#bbb' }} />
+                          </Box>
+                        )}
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Paper>
+
+                {/* Features Card */}
+                <Paper elevation={1} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+                  <Typography variant="h6" gutterBottom color="primary" sx={{ mb: 2 }}>
+                    ⭐ Product Features
+                  </Typography>
+                  <Box sx={{ mb: 2 }}>
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="Add Feature"
+                        placeholder="e.g., Wi-Fi Enabled, Voice Control, Smart Scheduling"
+                        value={newFeature}
+                        onChange={(e) => setNewFeature(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && newFeature.trim()) {
+                            const features = [...(editProduct.features || []), newFeature.trim()];
+                            setEditProduct({...editProduct, features});
+                            setNewFeature('');
+                          }
+                        }}
+                      />
+                      <Button
+                        variant="contained"
+                        onClick={() => {
+                          if (newFeature.trim()) {
+                            const features = [...(editProduct.features || []), newFeature.trim()];
+                            setEditProduct({...editProduct, features});
+                            setNewFeature('');
+                          }
+                        }}
+                        disabled={!newFeature.trim()}
+                        sx={{ minWidth: 'auto', px: 2 }}
                       >
-                        <Inventory sx={{ fontSize: 30, color: 'grey.500' }} />
-                      </Avatar>
-                      <Typography variant="caption" color="text.secondary">
-                        No image URL - default icon will be shown
-                      </Typography>
+                        Add
+                      </Button>
                     </Box>
-                  )}
-                </Grid>
-                
-                {/* Features Section for Edit */}
-                <Grid item xs={12}>
-                  <Box sx={{ mt: 2, mb: 1 }}>
-                    <Typography variant="h6" gutterBottom>
-                      Product Features
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Add key features that make this product unique
-                    </Typography>
                   </Box>
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-                    <TextField
-                      fullWidth
-                      label="Add Feature"
-                      placeholder="e.g., Wi-Fi Enabled, Voice Control, Smart Scheduling"
-                      value={newFeature}
-                      onChange={(e) => setNewFeature(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && newFeature.trim()) {
-                          const features = [...(editProduct.features || []), newFeature.trim()];
-                          setEditProduct({...editProduct, features});
-                          setNewFeature('');
-                        }
-                      }}
-                    />
-                    <Button
-                      variant="outlined"
-                      onClick={() => {
-                        if (newFeature.trim()) {
-                          const features = [...(editProduct.features || []), newFeature.trim()];
-                          setEditProduct({...editProduct, features});
-                          setNewFeature('');
-                        }
-                      }}
-                      disabled={!newFeature.trim()}
-                    >
-                      Add
-                    </Button>
-                  </Box>
-                </Grid>
-                
-                {editProduct.features && editProduct.features.length > 0 && (
-                  <Grid item xs={12}>
+                  
+                  {editProduct.features && editProduct.features.length > 0 && (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                       {editProduct.features.map((feature, index) => (
                         <Chip
@@ -2040,67 +2116,30 @@ const AdminDashboard = () => {
                           }}
                           color="primary"
                           variant="outlined"
+                          size="small"
                         />
                       ))}
                     </Box>
-                  </Grid>
-                )}
-                
-                {/* Downloads Section for Edit */}
-                <Grid item xs={12}>
-                  <Box sx={{ mt: 2, mb: 1 }}>
-                    <Typography variant="h6" gutterBottom>
-                      User Manuals & Downloads
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Upload PDF manuals, datasheets, and other downloadable resources
-                    </Typography>
-                  </Box>
-                </Grid>
-                
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    label="Document Label"
-                    placeholder="e.g., User Manual, Installation Guide, Datasheet"
-                    value={newDownload.label}
-                    onChange={(e) => setNewDownload({...newDownload, label: e.target.value})}
-                  />
-                </Grid>
-                
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Document Type</InputLabel>
-                    <Select
-                      value={newDownload.type}
-                      onChange={(e) => setNewDownload({...newDownload, type: e.target.value})}
-                    >
-                      <MenuItem value="manual">User Manual</MenuItem>
-                      <MenuItem value="datasheet">Datasheet</MenuItem>
-                      <MenuItem value="software">Software/Firmware</MenuItem>
-                      <MenuItem value="driver">Driver</MenuItem>
-                      <MenuItem value="guide">Installation Guide</MenuItem>
-                      <MenuItem value="other">Other</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                  )}
+                </Paper>
+
+                {/* Downloads Card */}
+                <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
+                  <Typography variant="h6" gutterBottom color="primary" sx={{ mb: 2 }}>
+                    📄 Documents & Downloads
+                  </Typography>
+                  <Box sx={{ mb: 2 }}>
                     <input
                       accept="application/pdf"
                       style={{ display: 'none' }}
                       id="pdf-upload-edit"
                       type="file"
-                      onChange={async (e) => {
+                      onChange={(e) => {
                         const file = e.target.files[0];
                         if (file) {
-                          if (file.size > 10 * 1024 * 1024) {
-                            showNotification('PDF file size must be less than 10MB', 'error');
-                            return;
-                          }
-                          await handlePdfUpload(file, true);
+                          handlePdfFileSelect(file, true);
                         }
+                        e.target.value = '';
                       }}
                     />
                     <label htmlFor="pdf-upload-edit">
@@ -2108,34 +2147,44 @@ const AdminDashboard = () => {
                         variant="outlined"
                         component="span"
                         startIcon={<CloudUpload />}
-                        disabled={!newDownload.label || !newDownload.type}
                       >
-                        Upload PDF
+                        Upload PDF Document
                       </Button>
                     </label>
-                    <Typography variant="caption" color="text.secondary">
-                      Max size: 10MB • Format: PDF only
+                    <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>
+                      Max 10MB • PDF only
                     </Typography>
                   </Box>
-                </Grid>
-                
-                {editProduct.downloads && editProduct.downloads.length > 0 && (
-                  <Grid item xs={12}>
-                    <Box sx={{ mt: 1 }}>
+                  
+                  {editProduct.downloads && editProduct.downloads.length > 0 && (
+                    <Box sx={{ mt: 2 }}>
                       <Typography variant="subtitle2" gutterBottom>
                         Uploaded Documents:
                       </Typography>
                       {editProduct.downloads.map((download, index) => (
-                        <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 1 }}>
-                          <Typography variant="body2" sx={{ flex: 1 }}>
-                            {download.label} ({download.type})
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {download.fileSize}
-                          </Typography>
+                        <Box key={index} sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 2, 
+                          p: 2, 
+                          border: '1px solid', 
+                          borderColor: 'divider', 
+                          borderRadius: 1, 
+                          mb: 1,
+                          backgroundColor: '#f9f9f9'
+                        }}>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="body2" fontWeight={500}>
+                              {download.label}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {download.type} • {download.fileSize}
+                            </Typography>
+                          </Box>
                           <Button
                             size="small"
                             color="error"
+                            variant="outlined"
                             onClick={() => {
                               const downloads = editProduct.downloads.filter((_, i) => i !== index);
                               setEditProduct({...editProduct, downloads});
@@ -2146,18 +2195,24 @@ const AdminDashboard = () => {
                         </Box>
                       ))}
                     </Box>
-                  </Grid>
-                )}
-              </Grid>
+                  )}
+                </Paper>
+              </Box>
             )}
           </DialogContent>
-          <DialogActions sx={{ p: 3 }}>
-            <Button onClick={() => setEditProduct(null)}>
+          <DialogActions sx={{ p: 3, backgroundColor: '#f9f9f9' }}>
+            <Button 
+              onClick={() => setEditProduct(null)}
+              color="inherit"
+              sx={{ mr: 1 }}
+            >
               Cancel
             </Button>
             <Button 
               onClick={handleEditProduct} 
               variant="contained"
+              disabled={!editProduct?.name || !editProduct?.price}
+              startIcon={<Edit />}
             >
               Update Product
             </Button>
@@ -2692,6 +2747,74 @@ const AdminDashboard = () => {
       
       {/* Product View Dialog */}
       {renderProductViewDialog()}
+      
+      {/* PDF Upload Dialog */}
+      <Dialog 
+        open={pdfUploadDialogOpen} 
+        onClose={() => setPdfUploadDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          📄 Upload PDF Document
+        </DialogTitle>
+        <DialogContent>
+          {selectedPdfFile && (
+            <Box sx={{ mb: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Selected file:
+              </Typography>
+              <Typography variant="body1" fontWeight={500}>
+                {selectedPdfFile.file.name}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Size: {(selectedPdfFile.file.size / 1024 / 1024).toFixed(2)} MB
+              </Typography>
+            </Box>
+          )}
+          
+          <TextField
+            fullWidth
+            label="Document Label"
+            placeholder="e.g., User Manual, Installation Guide, Datasheet"
+            value={pdfUploadData.label}
+            onChange={(e) => setPdfUploadData({...pdfUploadData, label: e.target.value})}
+            sx={{ mb: 2 }}
+            autoFocus
+          />
+          
+          <FormControl fullWidth>
+            <InputLabel>Document Type</InputLabel>
+            <Select
+              value={pdfUploadData.type}
+              onChange={(e) => setPdfUploadData({...pdfUploadData, type: e.target.value})}
+            >
+              <MenuItem value="manual">User Manual</MenuItem>
+              <MenuItem value="datasheet">Datasheet</MenuItem>
+              <MenuItem value="software">Software/Firmware</MenuItem>
+              <MenuItem value="driver">Driver</MenuItem>
+              <MenuItem value="guide">Installation Guide</MenuItem>
+              <MenuItem value="other">Other</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setPdfUploadDialogOpen(false)}
+            color="inherit"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={confirmPdfUpload}
+            variant="contained"
+            disabled={!pdfUploadData.label || !pdfUploadData.type}
+            startIcon={<CloudUpload />}
+          >
+            Upload Document
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
