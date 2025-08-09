@@ -9,7 +9,7 @@ const User = require('../models/userModel');
 const createOrder = async (req, res) => {
   try {
     console.log('Creating order - Request user:', req.user ? req.user._id : 'No user');
-    console.log('Creating order - Request body:', req.body);
+    console.log('Creating order - Request body:-', req.body);
     
     const {
       orderItems,
